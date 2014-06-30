@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
   argTypes3[1] = 0;
 
   /* same here, 28 is the exact length of the parameter */
+    // 28? will 28 be ignored in binder side?
   argTypes4[0] = (1 << ARG_INPUT) | (ARG_CHAR << 16) | 28;
   argTypes4[1] = 0;
 
