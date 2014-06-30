@@ -20,14 +20,15 @@ extern "C" {
 
 typedef int (*skeleton)(int *, void **);
 
-extern int rpcInit();
 // Client side:
 extern int rpcCall(char* name, int* argTypes, void** args);
 extern int rpcCacheCall(char* name, int* argTypes, void** args);
+extern int rpcTerminate();
+
+// Server side:
+extern int rpcInit();
 extern int rpcRegister(char* name, int* argTypes, skeleton f);
 extern int rpcExecute();
-// Client side:
-extern int rpcTerminate();
 
 #ifdef __cplusplus
 }
