@@ -29,6 +29,10 @@ extern int rpcTerminate();
 extern int rpcInit();
 extern int rpcRegister(char* name, int* argTypes, skeleton f);
 extern int rpcExecute();
+    
+// Binder side:
+extern int rpcBinderInit();
+    
 
 #ifdef __cplusplus
 }
