@@ -7,6 +7,9 @@
 extern "C" {
 #endif
  
+#define ARG_INPUT   31
+#define ARG_OUTPUT  30
+
 #define ARG_CHAR    1
 #define ARG_SHORT   2
 #define ARG_INT     3
@@ -14,9 +17,10 @@ extern "C" {
 #define ARG_DOUBLE  5
 #define ARG_FLOAT   6
 
-#define ARG_INPUT   31
-#define ARG_OUTPUT  30
-
+#define MSG_SERVER_BINDER_REGISTER 1
+#define MSG_CLIENT_BINDER_LOCATE 2
+#define MSG_CLIENT_BINDER_TERMINATE 3
+#define MSG_CLIENT_SERVER_EXECUTE 4
 
 typedef int (*skeleton)(int *, void **);
 
