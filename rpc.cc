@@ -21,26 +21,113 @@
  *  Description: Server related functions
  *
  ****************************************************/
+
+#define MAX_NUMBER_OF_CLIENTS 10
+int serverToClientSocket;
 int serverToBinderSocket;
 
+/**
+ *  rpcInit()
+ *
+ *  1, Set up server listen sockets for clients
+ *  2, Create socket connection with Binder
+ *
+ *  @return result of rpcInit()
+ */
 int rpcInit() {
     std::cout << "rpcInit()" << std::endl;
+    
+    // 1, Set up server listen sockets for clients
+    char ipv4Address[INET_ADDRSTRLEN];
+    int portNumber;
+    
+    // Get IPv4 address for this host
+    struct addrinfo hints, *res, *p;
+    int status;
+    
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET; // IPv4
+    hints.ai_socktype = SOCK_STREAM;
+    
+    char hostname[128];
+    gethostname(hostname, sizeof(hostname));
+    if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+        return -1;
+    }
+    
+    for(p = res; p != NULL; p = p->ai_next) {
+        void *addr;
+        if (p->ai_family == AF_INET) { // IPv4
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+            addr = &(ipv4->sin_addr);
+            // Convert the IP to a string and print it:
+            inet_ntop(p->ai_family, addr, ipv4Address, sizeof ipv4Address);
+            printf("SERVER_ADDRESS %s\n", ipv4Address);
+            break;
+        }
+    }
+    freeaddrinfo(res); // Free the linked list
+    
+    // Create socket
+    serverToClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverToClientSocket == -1) {
+        perror("Could not create socket\n");
+        return -1;
+    }
+    
+    int addr_size;
+    setsockopt(serverToClientSocket, SOL_SOCKET, SO_REUSEADDR, &addr_size, sizeof(addr_size)); // So that we can re-bind to it without TIME_WAIT problems
 
-    // Create server to binder socket
+    // Prepare the sockaddr_in structure
+    struct sockaddr_in clientToServer;
+    memset(&clientToServer, 0, sizeof(struct sockaddr_in));
+    clientToServer.sin_family = AF_INET;
+    clientToServer.sin_addr.s_addr = htonl(INADDR_ANY);
+    clientToServer.sin_port = htons(0);
+    
+    // Bind
+    int bindResult = bind(serverToClientSocket, (struct sockaddr *)&clientToServer, sizeof(struct sockaddr_in));
+    if(bindResult == -1) {
+        perror("Bind failed");
+        return -1;
+    }
+
+    // Listen
+    listen(serverToClientSocket , MAX_NUMBER_OF_CLIENTS);
+
+    // Print out port number
+    socklen_t addressLength = sizeof(clientToServer);
+    if (getsockname(serverToClientSocket, (struct sockaddr*)&clientToServer, &addressLength) == -1) {
+        perror("Get port error");
+        return -1;
+    }
+    printf("SERVER_PORT %d\n", ntohs(clientToServer.sin_port));
+    portNumber = ntohs(clientToServer.sin_port);
+    
+    // Does need to handle multi clients???
+    
+//    // Since there is only one sock, this is the highest
+//    binderHighestSocket = binderListenSocket;
+//    // Clear the clients
+//    memset((char *) &binderConnections, 0, sizeof(binderConnections));
+    
+    
+    // 2, Create socket connection with Binder
     serverToBinderSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverToBinderSocket == -1) {
         perror("Server to binder: Could not create socket\n");
         return -1;
     }
     
-    struct sockaddr_in server;
+    struct sockaddr_in serverToBinder;
     // Set address
-    server.sin_addr.s_addr = inet_addr(getenv("BINDER_ADDRESS"));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(atoi(getenv("BINDER_PORT")));
+    serverToBinder.sin_addr.s_addr = inet_addr(getenv("BINDER_ADDRESS"));
+    serverToBinder.sin_family = AF_INET;
+    serverToBinder.sin_port = htons(atoi(getenv("BINDER_PORT")));
     
     // Connect
-    if (connect(serverToBinderSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) == -1) {
+    if (connect(serverToBinderSocket, (struct sockaddr *)&serverToBinder, sizeof(struct sockaddr_in)) == -1) {
         perror("Server to binder: Connect failed. Error");
         return -1;
     }
@@ -101,7 +188,7 @@ int rpcBinderInit() {
     // Get IPv4 address for this host
     struct addrinfo hints, *res, *p;
     int status;
-    char ipstr[INET6_ADDRSTRLEN];
+    char ipstr[INET_ADDRSTRLEN];
     
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET; // IPv4
