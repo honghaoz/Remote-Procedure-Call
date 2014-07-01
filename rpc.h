@@ -29,12 +29,14 @@ extern "C" {
 #define MSG_LENGTH_MASK 0xFFFF0000
 #define MSG_TYPE_MASK 0x0000FFFF
 
+#define BIT uint8_t
 typedef int (*skeleton)(int *, void **);
 
 #include <stdint.h>
 
 // Helper functions:
 const char *u32ToBit(uint32_t x);
+void printBitRepresentation(BIT *x, int byteNumber);
     
 // Server side:
 extern int rpcInit();

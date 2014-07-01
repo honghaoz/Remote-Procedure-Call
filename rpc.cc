@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <iostream>
+#include <math.h>
 #include "rpc.h"
 //using namespace std;
 
@@ -45,6 +46,44 @@ const char *u32ToBit(uint32_t x)
     return b;
 }
 
+void printBitRepresentation(BIT *x, int byteNumber) {
+    char ccc[byteNumber * 4 + byteNumber / 4];
+    ccc[0] = '\0';
+    //    printf("%d, %d\n", sizeof(ccc), sizeof(bits));
+    int i = 0;
+    while (byteNumber > 0) {
+        if (byteNumber > 4) {
+            uint32_t z, xx;
+            memcpy(&xx, x + 4 * i, 4);
+            for (z = 0b10000000000000000000000000000000; z > 0; z >>= 1)
+            {
+                strcat(ccc, ((xx & z) == z) ? "1" : "0");
+            }
+            i++;
+            byteNumber -= 4;
+            strcat(ccc, " ");
+        }
+        else {
+            uint32_t z, xx;
+            memcpy(&xx, x + 4 * i, byteNumber);
+            for (z = pow(2, byteNumber * 8 - 1); z > 0; z >>= 1)
+            {
+                strcat(ccc, ((xx & z) == z) ? "1" : "0");
+            }
+            byteNumber -= byteNumber;
+        }
+    }
+    printf("%s\n", ccc);
+}
+
+uint32_t argTypesLength(int *argTypes) {
+    uint32_t i = 0;
+    while (argTypes[i] != 0) {
+        i++;
+    }
+    return i + 1;
+}
+
 /******************* Server Functions ****************
  *
  *  Description: Server related functions
@@ -52,9 +91,12 @@ const char *u32ToBit(uint32_t x)
  ****************************************************/
 
 #define MAX_NUMBER_OF_CLIENTS 10
+// Socket descriptor of server for clients
 int serverForClientSocket;
+// Socket descriptor of server to binder
 int serverToBinderSocket;
 
+// Server identifier and port number
 char ipv4Address[INET_ADDRSTRLEN];
 int portNumber;
 
@@ -147,6 +189,7 @@ int rpcInit() {
 
     struct sockaddr_in serverToBinder;
     // Set address
+#warning Need to change to dynamic address
     serverToBinder.sin_addr.s_addr = inet_addr("127.0.0.1");//getenv("BINDER_ADDRESS"));
     serverToBinder.sin_family = AF_INET;
     serverToBinder.sin_port = htons(8888);//htons(atoi(getenv("BINDER_PORT")));
@@ -165,7 +208,8 @@ int rpcInit() {
  *  rpcRegister(char* name, int* argTypes, skeleton f)
  *
  *  1,  Send procedure to binder and register server procedure
- *  2,  Message type is MSG_SERVER_BINDER_REGISTER
+ *  2,  Message format is Length(4 bytes) + Type(4 bytes) + Message
+ *      Message type is MSG_SERVER_BINDER_REGISTER
  *      Message is REGISTER, server_identifier, port, name, argTypes
  *
  *  @return result of rpcRegister()
@@ -173,6 +217,28 @@ int rpcInit() {
 
 int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
+    
+    // Prepare message content
+    uint32_t sizeOfIp = (uint32_t)strlen(ipv4Address) + 1;
+    uint32_t sizeOfport = sizeof(portNumber);
+    uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
+    uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
+    uint32_t totalSize = sizeOfIp + sizeOfport + sizeOfName + sizeOfArgTypes + 3;
+    printf("%d + %d + %d + %d = %d\n", sizeOfIp, sizeOfport, sizeOfName, sizeOfArgTypes, totalSize);
+    
+    BIT message[totalSize];
+    char seperator = ',';
+    memcpy(message, ipv4Address, sizeOfIp); // [ip]
+    memcpy(message + sizeOfIp, &seperator, 1); // [ip,]
+    memcpy(message + sizeOfIp + 1, &portNumber, sizeOfport); // [ip,portnum]
+    memcpy(message + sizeOfIp + 1 + sizeOfport, &seperator, 1); // [ip,portnum,]
+    memcpy(message + sizeOfIp + 1 + sizeOfport + 1, name, sizeOfName); // [ip,portnum,name]
+    memcpy(message + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName, &seperator, 1); // [ip,portnum,name,]
+    memcpy(message + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    
+    // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
+    uint32_t messageLength = totalSize;
+    uint32_t messageType = MSG_SERVER_BINDER_REGISTER;
     
     return 0;
 }
@@ -266,6 +332,7 @@ int rpcBinderInit() {
     memset(&binder, 0, sizeof(struct sockaddr_in));
     binder.sin_family = AF_INET;
     binder.sin_addr.s_addr = htonl(INADDR_ANY);
+#warning Need to change to dynamic port number
     binder.sin_port = htons(8888);//htons(0);
     
     // Bind
