@@ -16,6 +16,35 @@
 #include "rpc.h"
 //using namespace std;
 
+/******************* Helper Functions ****************
+ *
+ *  Description: Some handy functions
+ *
+ ****************************************************/
+
+/**
+ *  Convert unsigned 32 bit integer to a bit string
+ *
+ *  @param x unsigned 32 bit integer
+ *
+ *  @return string representing in bit
+ */
+const char *u32ToBit(uint32_t x)
+{
+    static char b[36]; // includes 32 bits, 3 spaces and 1 trailing zero
+    b[0] = '\0';
+    
+    u_int32_t z;
+    int i = 1;
+    for (z = 0b10000000000000000000000000000000; z > 0; z >>= 1, i++)
+    {
+        strcat(b, ((x & z) == z) ? "1" : "0");
+        if (i % 8 == 0) strcat(b, " "); // seperate 8 bits by a space
+    }
+    
+    return b;
+}
+
 /******************* Server Functions ****************
  *
  *  Description: Server related functions

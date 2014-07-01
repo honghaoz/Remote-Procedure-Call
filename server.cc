@@ -2,9 +2,9 @@
 #include "server_function_skels.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main(int argc, char *argv[]) {
-  
     int status = -1;
     /* create sockets and connect to the binder */
     status = rpcInit();
@@ -14,25 +14,25 @@ int main(int argc, char *argv[]) {
     }
     printf("rpcInit() succeed!\n");
 
-  /* prepare server functions' signatures */
-  int count0 = 3;
-  int count1 = 5;
-  int count2 = 3;
-  int count3 = 1;
-  int count4 = 1;
-  int argTypes0[count0 + 1];
-  int argTypes1[count1 + 1];
-  int argTypes2[count2 + 1];
-  int argTypes3[count3 + 1];
-  int argTypes4[count4 + 1];
+    /* prepare server functions' signatures */
+    int count0 = 3;
+    int count1 = 5;
+    int count2 = 3;
+    int count3 = 1;
+    int count4 = 1;
+    int argTypes0[count0 + 1];
+    int argTypes1[count1 + 1];
+    int argTypes2[count2 + 1];
+    int argTypes3[count3 + 1];
+    int argTypes4[count4 + 1];
 
-  argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
-  argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
-  argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
-  argTypes0[3] = 0;
+    argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
+    argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
+    argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
+    argTypes0[3] = 0;
 
-  argTypes1[0] = (1 << ARG_OUTPUT) | (ARG_LONG << 16);
-  argTypes1[1] = (1 << ARG_INPUT) | (ARG_CHAR << 16);
+    argTypes1[0] = (1 << ARG_OUTPUT) | (ARG_LONG << 16);
+    argTypes1[1] = (1 << ARG_INPUT) | (ARG_CHAR << 16);
   argTypes1[2] = (1 << ARG_INPUT) | (ARG_SHORT << 16);
   argTypes1[3] = (1 << ARG_INPUT) | (ARG_INT << 16);
   argTypes1[4] = (1 << ARG_INPUT) | (ARG_LONG << 16);
