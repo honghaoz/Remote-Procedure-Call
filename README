@@ -1,5 +1,17 @@
 CS 454 Assignment 3
 
+Instructions for generating and using static library (.a)
+
+g++ -c rpc.cc => rpc.o
+g++ -c client1.cc => client1.o
+
+ar rcs librpc.a rpc.o => librpc.a
+ranlib librpc.a => index the librpc.a
+
+g++ client1.o rpc.o -L. -lrpc -o client1 => client executable
+
+
+
 Instructions for program
 
 Commands:
