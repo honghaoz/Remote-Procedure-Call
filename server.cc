@@ -1,10 +1,17 @@
 #include "rpc.h"
 #include "server_function_skels.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, char *argv[]) {
   
-  /* create sockets and connect to the binder */
-  rpcInit();
+    int status = -1;
+    /* create sockets and connect to the binder */
+    status = rpcInit();
+    if (status < 0) {
+        perror("rpcInit() failed");
+        exit(EXIT_FAILURE);
+    }
 
   /* prepare server functions' signatures */
   int count0 = 3;

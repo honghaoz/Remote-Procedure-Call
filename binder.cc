@@ -1,7 +1,7 @@
 /************************
-CS454 A3 binder.cc
-created by Chao
-
+ CS454 A3 binder.cc
+ 
+ created by Chao
 
 *************************/
 
@@ -14,6 +14,11 @@ using namespace std;
 
 int main()
 {
-    rpcBinderInit();
+    int status = -1;
+    status = rpcBinderInit();
+    if (status < 0) {
+        exit(EXIT_FAILURE);
+    }
+    rpcBinderListen();
     return 0;
 }

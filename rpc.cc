@@ -16,9 +16,35 @@
 #include "rpc.h"
 //using namespace std;
 
-// Server side:
+/******************* Server Functions ****************
+ *
+ *  Description: Server related functions
+ *
+ ****************************************************/
+int serverToBinderSocket;
+
 int rpcInit() {
     std::cout << "rpcInit()" << std::endl;
+
+    // Create server to binder socket
+    serverToBinderSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverToBinderSocket == -1) {
+        perror("Server to binder: Could not create socket\n");
+        return -1;
+    }
+    
+    struct sockaddr_in server;
+    // Set address
+    server.sin_addr.s_addr = inet_addr(getenv("BINDER_ADDRESS"));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(atoi(getenv("BINDER_PORT")));
+    
+    // Connect
+    if (connect(serverToBinderSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) == -1) {
+        perror("Server to binder: Connect failed. Error");
+        return -1;
+    }
+    
     return 0;
 }
 
@@ -26,12 +52,18 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
     return 0;
 }
+
 int rpcExecute() {
     std::cout << "rpcExecute()" << std::endl;
     return 0;
 }
 
-// Client side:
+/******************* Client Functions ****************
+ *
+ *  Description: Client related functions
+ *
+ ****************************************************/
+
 int rpcCall(char* name, int* argTypes, void** args) {
     std::cout << "rpcCall(" << name << ")" << std::endl;
     return 0;
@@ -50,6 +82,7 @@ int rpcTerminate() {
  *  Description: Binder related functions
  *
  ****************************************************/
+
 #define MAX_NUMBER_OF_CONNECTIONS 100
 
 int binderListenSocket; // binder Listening socket
@@ -133,6 +166,11 @@ int rpcBinderInit() {
     binderHighestSocket = binderListenSocket;
     // Clear the clients
     memset((char *) &binderConnections, 0, sizeof(binderConnections));
+    return 0;
+}
+
+int rpcBinderListen() {
+    std::cout << "rpcBinderListen()" << std::endl;
     
     int numberOfReadSockets; // Number of sockets ready for reading
     

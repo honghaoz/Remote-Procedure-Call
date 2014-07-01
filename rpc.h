@@ -36,8 +36,8 @@ extern int rpcExecute();
     
 // Binder side:
 extern int rpcBinderInit();
+extern int rpcBinderListen();
     
-
 #ifdef __cplusplus
 }
 #endif
