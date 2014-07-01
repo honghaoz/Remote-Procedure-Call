@@ -23,23 +23,25 @@
  ****************************************************/
 
 #define MAX_NUMBER_OF_CLIENTS 10
-int serverToClientSocket;
+int serverForClientSocket;
 int serverToBinderSocket;
+
+char ipv4Address[INET_ADDRSTRLEN];
+int portNumber;
 
 /**
  *  rpcInit()
  *
- *  1, Set up server listen sockets for clients
- *  2, Create socket connection with Binder
+ *  1,  Set up server listen sockets for clients
+ *  2,  Create socket connection with Binder
  *
  *  @return result of rpcInit()
  */
+
 int rpcInit() {
     std::cout << "rpcInit()" << std::endl;
     
     // 1, Set up server listen sockets for clients
-    char ipv4Address[INET_ADDRSTRLEN];
-    int portNumber;
     
     // Get IPv4 address for this host
     struct addrinfo hints, *res, *p;
@@ -70,48 +72,42 @@ int rpcInit() {
     freeaddrinfo(res); // Free the linked list
     
     // Create socket
-    serverToClientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverToClientSocket == -1) {
+    serverForClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverForClientSocket == -1) {
         perror("Could not create socket\n");
         return -1;
     }
     
     int addr_size;
-    setsockopt(serverToClientSocket, SOL_SOCKET, SO_REUSEADDR, &addr_size, sizeof(addr_size)); // So that we can re-bind to it without TIME_WAIT problems
+    setsockopt(serverForClientSocket, SOL_SOCKET, SO_REUSEADDR, &addr_size, sizeof(addr_size)); // So that we can re-bind to it without TIME_WAIT problems
 
     // Prepare the sockaddr_in structure
-    struct sockaddr_in clientToServer;
-    memset(&clientToServer, 0, sizeof(struct sockaddr_in));
-    clientToServer.sin_family = AF_INET;
-    clientToServer.sin_addr.s_addr = htonl(INADDR_ANY);
-    clientToServer.sin_port = htons(0);
+    struct sockaddr_in clientForServer;
+    memset(&clientForServer, 0, sizeof(struct sockaddr_in));
+    clientForServer.sin_family = AF_INET;
+    clientForServer.sin_addr.s_addr = htonl(INADDR_ANY);
+    clientForServer.sin_port = htons(0);
     
     // Bind
-    int bindResult = bind(serverToClientSocket, (struct sockaddr *)&clientToServer, sizeof(struct sockaddr_in));
+    int bindResult = bind(serverForClientSocket, (struct sockaddr *)&clientForServer, sizeof(struct sockaddr_in));
     if(bindResult == -1) {
         perror("Bind failed");
         return -1;
     }
 
     // Listen
-    listen(serverToClientSocket , MAX_NUMBER_OF_CLIENTS);
+    listen(serverForClientSocket , MAX_NUMBER_OF_CLIENTS);
 
     // Print out port number
-    socklen_t addressLength = sizeof(clientToServer);
-    if (getsockname(serverToClientSocket, (struct sockaddr*)&clientToServer, &addressLength) == -1) {
+    socklen_t addressLength = sizeof(clientForServer);
+    if (getsockname(serverForClientSocket, (struct sockaddr*)&clientForServer, &addressLength) == -1) {
         perror("Get port error");
         return -1;
     }
-    printf("SERVER_PORT %d\n", ntohs(clientToServer.sin_port));
-    portNumber = ntohs(clientToServer.sin_port);
+    printf("SERVER_PORT %d\n", ntohs(clientForServer.sin_port));
+    portNumber = ntohs(clientForServer.sin_port);
     
     // Does need to handle multi clients???
-    
-//    // Since there is only one sock, this is the highest
-//    binderHighestSocket = binderListenSocket;
-//    // Clear the clients
-//    memset((char *) &binderConnections, 0, sizeof(binderConnections));
-    
     
     // 2, Create socket connection with Binder
     serverToBinderSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -119,13 +115,14 @@ int rpcInit() {
         perror("Server to binder: Could not create socket\n");
         return -1;
     }
-    
+
     struct sockaddr_in serverToBinder;
     // Set address
-    serverToBinder.sin_addr.s_addr = inet_addr(getenv("BINDER_ADDRESS"));
+    serverToBinder.sin_addr.s_addr = inet_addr("127.0.0.1");//getenv("BINDER_ADDRESS"));
     serverToBinder.sin_family = AF_INET;
-    serverToBinder.sin_port = htons(atoi(getenv("BINDER_PORT")));
+    serverToBinder.sin_port = htons(8888);//htons(atoi(getenv("BINDER_PORT")));
     
+
     // Connect
     if (connect(serverToBinderSocket, (struct sockaddr *)&serverToBinder, sizeof(struct sockaddr_in)) == -1) {
         perror("Server to binder: Connect failed. Error");
@@ -135,8 +132,19 @@ int rpcInit() {
     return 0;
 }
 
+/**
+ *  rpcRegister(char* name, int* argTypes, skeleton f)
+ *
+ *  1,  Send procedure to binder and register server procedure
+ *  2,  Message type is MSG_SERVER_BINDER_REGISTER
+ *      Message is REGISTER, server_identifier, port, name, argTypes
+ *
+ *  @return result of rpcRegister()
+ */
+
 int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
+    
     return 0;
 }
 
@@ -225,14 +233,14 @@ int rpcBinderInit() {
     setsockopt(binderListenSocket, SOL_SOCKET, SO_REUSEADDR, &addr_size, sizeof(addr_size)); // So that we can re-bind to it without TIME_WAIT problems
     
     // Prepare the sockaddr_in structure
-    struct sockaddr_in server;
-    memset(&server, 0, sizeof(struct sockaddr_in));
-    server.sin_family = AF_INET;
-    server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons(0);
+    struct sockaddr_in binder;
+    memset(&binder, 0, sizeof(struct sockaddr_in));
+    binder.sin_family = AF_INET;
+    binder.sin_addr.s_addr = htonl(INADDR_ANY);
+    binder.sin_port = htons(8888);//htons(0);
     
     // Bind
-    int bindResult = bind(binderListenSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in));
+    int bindResult = bind(binderListenSocket, (struct sockaddr *)&binder, sizeof(struct sockaddr_in));
     if(bindResult == -1) {
         perror("Bind failed");
         return -1;
@@ -242,12 +250,12 @@ int rpcBinderInit() {
     listen(binderListenSocket , MAX_NUMBER_OF_CONNECTIONS);
     
     // Print out port number
-    socklen_t addressLength = sizeof(server);
-    if (getsockname(binderListenSocket, (struct sockaddr*)&server, &addressLength) == -1) {
+    socklen_t addressLength = sizeof(binder);
+    if (getsockname(binderListenSocket, (struct sockaddr*)&binder, &addressLength) == -1) {
         perror("Get port error");
         return -1;
     }
-    printf("BINDER_PORT %d\n", ntohs(server.sin_port));
+    printf("BINDER_PORT %d\n", ntohs(binder.sin_port));
     
     // Since there is only one sock, this is the highest
     binderHighestSocket = binderListenSocket;
@@ -333,7 +341,7 @@ int binderHandleNewConnection() {
     // Add this new client to clients
     for (int i = 0; (i < MAX_NUMBER_OF_CONNECTIONS) && (i != -1); i++) {
         if (binderConnections[i] == 0) {
-            //            printf("\nConnection accepted: FD=%d; Slot=%d\n", new_client_sock, i);
+            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
             binderConnections[i] = newSock;
             newSock = -1;
             break;

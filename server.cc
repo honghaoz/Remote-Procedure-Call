@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
         perror("rpcInit() failed");
         exit(EXIT_FAILURE);
     }
+    printf("rpcInit() succeed!\n");
 
   /* prepare server functions' signatures */
   int count0 = 3;
