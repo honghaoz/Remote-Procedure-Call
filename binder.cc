@@ -5,22 +5,15 @@ created by Chao
 
 *************************/
 
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 using namespace std;
 
-typedef int (*skeleton)(int, int);
+#include "rpc.h"
 
-int add(int a, int b) {
-    return a + b;
-}
-
-
-
-int main(int argc, const char * argv[])
+int main()
 {
-    skeleton aa = &add;
-    (*aa)(123, 321);
-    cout << "Hello, World!\n";
+    rpcBinderInit();
     return 0;
 }
