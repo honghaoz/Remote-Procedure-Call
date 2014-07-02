@@ -211,6 +211,7 @@ int rpcInit() {
  *  2,  Message format is Length(4 bytes) + Type(4 bytes) + Message
  *      Message type is MSG_SERVER_BINDER_REGISTER
  *      Message is REGISTER, server_identifier, port, name, argTypes
+ *  3,  Server matches name and argTypes with skeleton
  *
  *  @return result of rpcRegister()
  */
