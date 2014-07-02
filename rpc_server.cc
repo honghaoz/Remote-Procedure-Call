@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <math.h>
+#include <utility>
+#include <map>
 #include "rpc.h"
 //using namespace std;
 
@@ -46,7 +48,7 @@ const char *u32ToBit(uint32_t x)
     return b;
 }
 
-void printBitRepresentation(BIT *x, int byteNumber) {
+void printBitRepresentation(BYTE *x, int byteNumber) {
     char ccc[byteNumber * 4 + byteNumber / 4];
     ccc[0] = '\0';
     //    printf("%d, %d\n", sizeof(ccc), sizeof(bits));
@@ -207,17 +209,22 @@ int rpcInit() {
 /**
  *  rpcRegister(char* name, int* argTypes, skeleton f)
  *
- *  1,  Send procedure to binder and register server procedure
- *  2,  Message format is Length(4 bytes) + Type(4 bytes) + Message
+ *  1,  Server matches name and argTypes with skeleton
+ *  2,  Send procedure to binder and register server procedure
+ *      Message format is Length(4 bytes) + Type(4 bytes) + Message
  *      Message type is MSG_SERVER_BINDER_REGISTER
  *      Message is REGISTER, server_identifier, port, name, argTypes
- *  3,  Server matches name and argTypes with skeleton
  *
  *  @return result of rpcRegister()
  */
 
 int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
+    
+    //1,  Server matches name and argTypes with skeleton
+    
+    
+    //2,  Send procedure to binder and register server procedure
     
     // Prepare message content
     uint32_t sizeOfIp = (uint32_t)strlen(ipv4Address) + 1;
@@ -227,7 +234,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     uint32_t totalSize = sizeOfIp + sizeOfport + sizeOfName + sizeOfArgTypes + 3;
     printf("%d + %d + %d + %d = %d\n", sizeOfIp, sizeOfport, sizeOfName, sizeOfArgTypes, totalSize);
     
-    BIT message[totalSize];
+    BYTE message[totalSize];
     char seperator = ',';
     memcpy(message, ipv4Address, sizeOfIp); // [ip]
     memcpy(message + sizeOfIp, &seperator, 1); // [ip,]
@@ -240,6 +247,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;
     uint32_t messageType = MSG_SERVER_BINDER_REGISTER;
+    
     
     return 0;
 }
