@@ -3,6 +3,9 @@
  *
  * This file defines all of the rpc related infomation.
  */
+#ifndef __RPC__H__
+#define __RPC__H__
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,3 +59,4 @@ extern int rpcBinderListen();
 }
 #endif
 
+#endif
