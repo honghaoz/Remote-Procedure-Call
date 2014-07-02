@@ -99,7 +99,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
         std::cerr<<"Connection Error Ocurrs!"<<std::endl;
         return -1;
     }
-    
+    //sending message
     return 0;
 }
 int rpcCacheCall(char* name, int* argTypes, void** args) {
