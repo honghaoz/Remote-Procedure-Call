@@ -205,58 +205,76 @@ int binderHandleNewConnection() {
 int binderDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = binderConnections[connectionNumber];
-    long receive_size;
     
-    // Prepare for string length
-    uint32_t network_byte_order;
-    uint32_t string_length;
+    // Prepare for message length, message type
+    uint32_t messageLength_network = 0;
+    uint32_t messageType_network = 0;
+    uint32_t messageLength = 0;
+    uint32_t messageType = 0;
     
-    // Receive a message from client
-    receive_size = recv(connectionSocket, &network_byte_order, sizeof(uint32_t), 0);
-    
-    // Receive successfully
-    if (receive_size > 0){
-        // Receive size must be same as sizeof(uint32_t) = 4
-        if (receive_size != sizeof(uint32_t)) {
-            printf("string length error\n");
-        }
-        //        printf("    *receive_size:%lu -   ", receive_size);
-        // Get string length
-        string_length = ntohl(network_byte_order);
-        
-        // Prepare memeory for string body
-        char *client_message = (char *)malloc(sizeof(char) * string_length);
-        // Revice string
-        receive_size = recv(connectionSocket, client_message, string_length, 0);
-        
-        //        printf("stringlength:%u - received_size: %zd\n", string_length, receive_size);
-        if (receive_size == string_length) {
-            //            struct timeval now;
-            //            gettimeofday(&now, NULL);
-            //            printf("%s - %ld.%d\n", client_message, now.tv_sec, now.tv_usec);
-            printf("%s\n", client_message);
-//            process_to_title_case(client_message);
-            // Send string length
-            send(connectionSocket, &network_byte_order, sizeof(uint32_t), 0);
-            // Send string
-            if(send(connectionSocket, client_message, receive_size, 0) == -1) {
-                //                printf("Send failed\n");
-            }
-        } else {
-            printf("string error: ");
-        }
-        free(client_message);
-    }
-    else if (receive_size < 0) {
-        perror("Receive failed");
-        return -1;
-    }
-    else {
-        // printf("\nConnection lost: FD=%d;  Slot=%d\n", client_sock, client_number);
+    // Receive message length
+    ssize_t receivedSize = -1;
+    receivedSize = recv(connectionSocket, &messageLength_network, sizeof(uint32_t), 0);
+    // Connection lost
+    if (receivedSize == 0) {
+        printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
         close(connectionSocket);
         
         // Set this place to be available
         binderConnections[connectionNumber] = 0;
     }
+    else if (receivedSize != sizeof(uint32_t)) {
+        perror("Binder received wrong length of message length\n");
+        return -1;
+    }
+    else { // Receive message length correctly
+        messageLength = ntohl(messageLength_network);
+    }
+    
+    // Receive message type
+    receivedSize = -1;
+    receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Binder received wrong length of message type\n");
+        return -1;
+    } else { // Receive message length correctly
+        messageType = ntohl(messageType_network);
+    }
+    
+    // Allocate messageBody
+    BYTE *messageBody = (BYTE *)malloc(sizeof(BYTE) * messageLength);
+    
+    // Receive message body
+    receivedSize = -1;
+    receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
+    if (receivedSize != messageLength) {
+        perror("Binder received wrong length of message body\n");
+        return -1;
+    }
+    
+    switch (messageType) {
+        case MSG_SERVER_BINDER_REGISTER: {
+            // Process message body
+            break;
+        }
+        case MSG_CLIENT_BINDER_LOCATE: {
+            // Process message body
+            break;
+        }
+        case MSG_CLIENT_BINDER_TERMINATE: {
+            // Process message body
+            break;
+        }
+        case MSG_CLIENT_SERVER_EXECUTE: {
+            // Process message body
+            break;
+        }
+        default:
+            perror("Binder received unknown message type\n");
+            return -1;
+            break;
+    }
+    free(messageBody);
+    
     return 0;
 }

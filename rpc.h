@@ -29,8 +29,8 @@ extern "C" {
 #define MSG_CLIENT_BINDER_TERMINATE 3
 #define MSG_CLIENT_SERVER_EXECUTE 4
 
-#define MSG_LENGTH_MASK 0xFFFF0000
-#define MSG_TYPE_MASK 0x0000FFFF
+//#define MSG_LENGTH_MASK 0xFFFF0000
+//#define MSG_TYPE_MASK 0x0000FFFF
 
 #define BYTE uint8_t
 typedef int (*skeleton)(int *, void **);

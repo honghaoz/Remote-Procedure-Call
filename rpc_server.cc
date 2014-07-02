@@ -49,33 +49,37 @@ const char *u32ToBit(uint32_t x)
 }
 
 void printBitRepresentation(BYTE *x, int byteNumber) {
-    char ccc[byteNumber * 4 + byteNumber / 4];
-    ccc[0] = '\0';
+    char bits[byteNumber * 4 + byteNumber / 4];
+    bits[0] = '\0';
     //    printf("%d, %d\n", sizeof(ccc), sizeof(bits));
     int i = 0;
     while (byteNumber > 0) {
         if (byteNumber > 4) {
             uint32_t z, xx;
             memcpy(&xx, x + 4 * i, 4);
+            printf("%s\n", u32ToBit(xx));
             for (z = 0b10000000000000000000000000000000; z > 0; z >>= 1)
             {
-                strcat(ccc, ((xx & z) == z) ? "1" : "0");
+                strcat(bits, ((xx & z) == z) ? "1" : "0");
             }
             i++;
             byteNumber -= 4;
-            strcat(ccc, " ");
+            strcat(bits, " ");
+//            printf("'%s'\n", bits);
         }
         else {
             uint32_t z, xx;
             memcpy(&xx, x + 4 * i, byteNumber);
+            printf("%s\n", u32ToBit(xx));
             for (z = pow(2, byteNumber * 8 - 1); z > 0; z >>= 1)
             {
-                strcat(ccc, ((xx & z) == z) ? "1" : "0");
+                strcat(bits, ((xx & z) == z) ? "1" : "0");
             }
             byteNumber -= byteNumber;
+//            printf("'%s'\n", bits);
         }
     }
-    printf("%s\n", ccc);
+//    printf("%s\n", bits);
 }
 
 uint32_t argTypesLength(int *argTypes) {
@@ -101,6 +105,8 @@ int serverToBinderSocket;
 // Server identifier and port number
 char ipv4Address[INET_ADDRSTRLEN];
 int portNumber;
+
+std::map<std::pair<char *, int *>, skeleton> procedureMap;
 
 /**
  *  rpcInit()
@@ -209,7 +215,7 @@ int rpcInit() {
 /**
  *  rpcRegister(char* name, int* argTypes, skeleton f)
  *
- *  1,  Server matches name and argTypes with skeleton
+ *  1,  Server add map entry: (name, argTypes) -> f
  *  2,  Send procedure to binder and register server procedure
  *      Message format is Length(4 bytes) + Type(4 bytes) + Message
  *      Message type is MSG_SERVER_BINDER_REGISTER
@@ -221,8 +227,9 @@ int rpcInit() {
 int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
     
-    //1,  Server matches name and argTypes with skeleton
-    
+    //1,  Server add map entry: (name, argTypes) -> f
+    std::pair<char *, int *> theProcedureSignature (name, argTypes);
+    procedureMap[theProcedureSignature] = f;
     
     //2,  Send procedure to binder and register server procedure
     
@@ -234,20 +241,49 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     uint32_t totalSize = sizeOfIp + sizeOfport + sizeOfName + sizeOfArgTypes + 3;
     printf("%d + %d + %d + %d = %d\n", sizeOfIp, sizeOfport, sizeOfName, sizeOfArgTypes, totalSize);
     
-    BYTE message[totalSize];
+    BYTE messageBody[totalSize];
     char seperator = ',';
-    memcpy(message, ipv4Address, sizeOfIp); // [ip]
-    memcpy(message + sizeOfIp, &seperator, 1); // [ip,]
-    memcpy(message + sizeOfIp + 1, &portNumber, sizeOfport); // [ip,portnum]
-    memcpy(message + sizeOfIp + 1 + sizeOfport, &seperator, 1); // [ip,portnum,]
-    memcpy(message + sizeOfIp + 1 + sizeOfport + 1, name, sizeOfName); // [ip,portnum,name]
-    memcpy(message + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName, &seperator, 1); // [ip,portnum,name,]
-    memcpy(message + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    memcpy(messageBody, ipv4Address, sizeOfIp); // [ip]
+    memcpy(messageBody + sizeOfIp, &seperator, 1); // [ip,]
+    memcpy(messageBody + sizeOfIp + 1, &portNumber, sizeOfport); // [ip,portnum]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfport, &seperator, 1); // [ip,portnum,]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfport + 1, name, sizeOfName); // [ip,portnum,name]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName, &seperator, 1); // [ip,portnum,name,]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;
     uint32_t messageType = MSG_SERVER_BINDER_REGISTER;
+    uint32_t messageLength_network = htonl(messageLength);
+    uint32_t messageType_network = htonl(messageType);
     
+//    // messageHeader_network is the compisition of messageLength_network and messageType_network
+//    uint64_t messageHeader_network = ((uint64_t)messageLength_network << 32) | (uint64_t)messageType_network;
+//    htonll(messageHeader_network);
+    
+    // Send message length (4 bytes)
+    ssize_t operationResult = -1;
+    operationResult = send(serverToBinderSocket, &messageLength_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Server registion to binder: Send message header failed\n");
+        return -1;
+    }
+    
+    // Send message type (4 bytes)
+    operationResult = -1;
+    operationResult = send(serverToBinderSocket, &messageType_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Server registion to binder: Send message header failed\n");
+        return -1;
+    }
+    
+    // Send message body (varied bytes)
+    operationResult = -1;
+    operationResult = send(serverToBinderSocket, &messageBody, messageLength, 0);
+    if (operationResult != messageLength) {
+        perror("Server registion to binder: Send message body failed\n");
+        return -1;
+    }
     
     return 0;
 }
