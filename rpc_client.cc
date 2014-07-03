@@ -79,9 +79,17 @@ int ConnectToBinder(){
         return socketfd;
     }
     else{
-        //already connected to binder
+        //already connected to binder, return the socket descriptor
         return socketfd;
     }
+}
+
+int locationRequest(std::string name, int* argTypes){
+    
+    
+    
+    
+    return 0;
 }
 
 /******************* Client Functions ****************
@@ -94,11 +102,13 @@ int ConnectToBinder(){
 int rpcCall(char* name, int* argTypes, void** args) {
     std::cout << "rpcCall(" << name << ")" << std::endl;
     int fd;
-    fd = ConnectToBinder();
+    fd = ConnectToBinder();//connect to binder first
     if(fd < 0){
         std::cerr<<"Connection Error Ocurrs!"<<std::endl;
         return -1;
     }
+    
+    
     //sending message
     return 0;
 }
