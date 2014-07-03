@@ -239,7 +239,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
     uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
     uint32_t totalSize = sizeOfIp + sizeOfport + sizeOfName + sizeOfArgTypes + 3;
-    printf("%d + %d + %d + %d = %d\n", sizeOfIp, sizeOfport, sizeOfName, sizeOfArgTypes, totalSize);
+//    printf("%d + %d + %d + %d = %d\n", sizeOfIp, sizeOfport, sizeOfName, sizeOfArgTypes, totalSize);
     
     BYTE messageBody[totalSize];
     char seperator = ',';
@@ -276,6 +276,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
         perror("Server registion to binder: Send message header failed\n");
         return -1;
     }
+    printf("type succeed\n");
     
     // Send message body (varied bytes)
     operationResult = -1;

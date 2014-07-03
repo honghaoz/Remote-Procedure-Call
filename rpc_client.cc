@@ -84,9 +84,23 @@ int ConnectToBinder(){
     }
 }
 
-int locationRequest(std::string name, int* argTypes){
+int locationRequest(std::string name, int* argTypes, int sockfd){
     
+    unsigned int remained_size;
+    int sent_size;
     
+    while(remained_size > 0){
+        //sent_size = send(sockfd, message, message.size()+1, 0);
+        if(sent_size == 0){
+            break;
+        }
+        else if(sent_size < 0){
+            return sent_size;
+        }
+        else{
+            remained_size -= sent_size;
+        }
+    }
     
     
     return 0;
@@ -108,6 +122,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
         return -1;
     }
     
+    locationRequest(name, argTypes,fd);
     
     //sending message
     return 0;

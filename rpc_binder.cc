@@ -228,12 +228,14 @@ int binderDealWithData(int connectionNumber) {
         return -1;
     }
     else { // Receive message length correctly
+        printf("%zd\n", receivedSize);
         messageLength = ntohl(messageLength_network);
     }
     
     // Receive message type
     receivedSize = -1;
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
+    printf("%zd\n", receivedSize);
     if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message type\n");
         return -1;
