@@ -34,6 +34,7 @@ int serverHighestSocket; // Highest # of socket file descriptor
 
 // Socket descriptor of server to binder
 int serverToBinderSocket;
+// Socket descriptor
 
 // Server identifier and port number
 char ipv4Address[INET_ADDRSTRLEN];
@@ -500,6 +501,7 @@ int serverDealWithData(int connectionNumber) {
     // Message body: [name,argTypes,args,]
     char *name = NULL;
     int *argTypes = NULL;
+    BYTE *argsByte = NULL;
     void ** args = NULL;
     int lastSeperatorIndex = -1;
     int messageCount = 0;
@@ -522,9 +524,9 @@ int serverDealWithData(int connectionNumber) {
                     break;
                 }
                 case 2: {
-                    uint32_t sizeOfArgs = i - (lastSeperatorIndex + 1);
-                    args = (void **)malloc(sizeof(BYTE) * sizeOfArgs);
-                    memcpy(args, messageBody + lastSeperatorIndex + 1, sizeOfArgs);
+                    uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
+                    argsByte = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
+                    memcpy(argsByte, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
                     break;
                 }
                 default:
@@ -536,12 +538,72 @@ int serverDealWithData(int connectionNumber) {
             messageCount++;
         }
     }
-//    printf("Locate Name: %s\n", name);
-//    printf("Locate ArgTypes: ");
-//    for (int i = 0; i < argTypesLength(argTypes); i++) {
-//        printf("%ud ", argTypes[i]);
-//    }
-//    printf("\n");
+    printf("Execute Name: %s\n", name);
+    printf("Execute ArgTypes: ");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%ud ", argTypes[i]);
+    }
+    printf("\n");
+    
+    // Process for args from argsByte
+    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
+    int offset = 0;
+    int argIndex = 0;
+    for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
+        uint32_t eachArgType = argTypes[i];
+        switch (eachArgType & ARG_TYPE_MASK) {
+            case ARG_CHAR: {
+                char var;
+                memcpy(&var, argsByte + offset, sizeof(var));
+                args[argIndex] = (void *)&var;
+                offset += sizeof(var);
+                break;
+            }
+            case ARG_SHORT: {
+                short var;
+                memcpy(&var, argsByte + offset, sizeof(var));
+                args[argIndex] = (void *)&var;
+                offset += sizeof(var);
+                break;
+            }
+            case ARG_INT: {
+                int var;
+                memcpy(&var, argsByte + offset, sizeof(var));
+                args[argIndex] = (void *)&var;
+                offset += sizeof(var);
+                break;
+            }
+            case ARG_LONG: {
+                long var;
+                memcpy(&var, argsByte + offset, sizeof(var));
+                args[argIndex] = (void *)&var;
+                offset += sizeof(var);
+                break;
+            }
+            case ARG_DOUBLE: {
+                double var;
+                memcpy(&var, argsByte + offset, sizeof(var));
+                args[argIndex] = (void *)&var;
+                offset += sizeof(var);
+                break;
+            }
+            case ARG_FLOAT: {
+                float var;
+                memcpy(&var, argsByte + offset, sizeof(var));
+                args[argIndex] = (void *)&var;
+                offset += sizeof(var);
+                break;
+            }
+            default:
+                perror("Arg type error \n");
+                break;
+        }
+        argIndex++;
+    }
+    std::pair<char *, int *> queryKey(name, argTypes);
+    skeleton f = serverProcedureToSkeleton[queryKey];
+    f(argTypes, args);
+    
 //    if (responseType == LOC_SUCCESS) {
 //        std::pair<char *, int *> queryKey(name, argTypes);
 //        std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
