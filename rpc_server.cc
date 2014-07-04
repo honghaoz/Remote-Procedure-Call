@@ -190,6 +190,8 @@ int serverToBinderInit() {
  *  3,  Receive registration response from binder
  *
  **********************************************************************/
+int serverHandleResponse(int connectionSocket);
+
 int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
     
@@ -274,17 +276,37 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     printf("\n");
     
     // 3,  Receive registration response from binder
+    return serverHandleResponse(serverToBinderSocket);
+}
+
+int serverHandleResponse(int connectionSocket) {
     uint32_t responseType_network = 0;
     uint32_t responseType = 0;
+    uint32_t responseErrorCode_network = 0;
+    uint32_t responseErrorCode = 0;
+    
+    // Receive response type
     ssize_t receivedSize = -1;
-    receivedSize = recv(serverToBinderSocket, &responseType_network, sizeof(uint32_t), 0);
+    receivedSize = recv(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
-        perror("Server receive binder response failed\n");
+        perror("Server receive binder response type failed\n");
         return -1;
     }
+    receivedSize = -1;
+    
+    // Receive response error code
+    receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Server receive binder response errorCode failed\n");
+        return -1;
+    }
+    
     responseType = ntohl(responseType_network);
+    responseErrorCode = ntohl(responseErrorCode_network);
+    
     if (responseType == REGISTER_FAILURE) {
-        perror("Binder response: REGISTER_FAILURE\n");
+        //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
+        std::cerr << "Binder response: REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;
         return -1;
     } else if (responseType == REGISTER_SUCCESS) {
         printf("Binder response: REGISTER_SUCCESS\n");
@@ -293,8 +315,6 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
         return 0;
     }
 }
-
-
 
 
 
