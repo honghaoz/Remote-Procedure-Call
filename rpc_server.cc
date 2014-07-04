@@ -254,13 +254,9 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;
-    uint32_t messageType = MSG_SERVER_BINDER_REGISTER;
+    uint32_t messageType = REGISTER;
     uint32_t messageLength_network = htonl(messageLength);
     uint32_t messageType_network = htonl(messageType);
-    
-//    // messageHeader_network is the compisition of messageLength_network and messageType_network
-//    uint64_t messageHeader_network = ((uint64_t)messageLength_network << 32) | (uint64_t)messageType_network;
-//    htonll(messageHeader_network);
     
     // Send message length (4 bytes)
     ssize_t operationResult = -1;
@@ -302,7 +298,25 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
 //    }
 //    printf("\n");
     
-    return 0;
+    // Receive response from binder
+    uint32_t responseType_network = 0;
+    uint32_t responseType = 0;
+    ssize_t receivedSize = -1;
+    receivedSize = recv(serverToBinderSocket, &responseType_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Server receive binder response failed\n");
+        return -1;
+    }
+    responseType = ntohl(responseType_network);
+    if (responseType == REGISTER_FAILURE) {
+        perror("Binder response: REGISTER_FAILURE\n");
+        return -1;
+    } else if (responseType == REGISTER_SUCCESS) {
+        printf("Binder response: REGISTER_SUCCESS\n");
+        return 0;
+    } else {
+        return 0;
+    }
 }
 
 int rpcExecute() {

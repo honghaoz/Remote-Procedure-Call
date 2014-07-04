@@ -269,12 +269,18 @@ int binderDealWithData(int connectionNumber) {
             
             int lastSeperatorIndex = -1;
             int messageCount = 0;
+            
+            uint32_t responseType = REGISTER_SUCCESS;
             // Process message body, initialize ip, port, name, argTypes
-            for (int i = 0; i < receivedSize; i++) {
+            for (int i = 0; i < receivedSize && responseType == REGISTER_SUCCESS; i++) {
                 if (messageBody[i] == ',') {
                     switch (messageCount) {
                         case 0: {
                             uint32_t sizeOfIp = i - (lastSeperatorIndex + 1);
+                            if (sizeOfIp > 16) {
+                                // Size is too large
+                                responseType = REGISTER_FAILURE;
+                            }
                             ipv4Address = (char*)malloc(sizeof(char) * sizeOfIp);
                             memcpy(ipv4Address, messageBody + lastSeperatorIndex + 1, sizeOfIp);
                             lastSeperatorIndex = i;
@@ -285,7 +291,7 @@ int binderDealWithData(int connectionNumber) {
                             uint32_t sizeOfPort = i - (lastSeperatorIndex + 1);
                             if (sizeOfPort != sizeof(portNumber)) {
                                 perror("port size error\n");
-                                return -1;
+                                responseType = REGISTER_FAILURE;
                             }
                             memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
                             lastSeperatorIndex = i;
@@ -328,14 +334,29 @@ int binderDealWithData(int connectionNumber) {
 //            }
 //            printf("\n");
             
-            // Store this procedure in binder's data store
-            std::pair<char *, int *> procedureKey(name, argTypes);
-            std::pair<char *, int> ID(ipv4Address, portNumber);
-            binderProcedureToID[procedureKey] = ID;
-//            
-//            free(ipv4Address);
-//            free(name);
-//            free(argTypes);
+            // If message is correct, register, else free
+            if (responseType == REGISTER_SUCCESS) {
+                // Store this procedure in binder's data store
+                std::pair<char *, int *> procedureKey(name, argTypes);
+                std::pair<char *, int> ID(ipv4Address, portNumber);
+                binderProcedureToID[procedureKey] = ID;
+            } else  {
+                free(ipv4Address);
+                free(name);
+                free(argTypes);
+
+            }
+            
+            // Send response message to server
+            uint32_t responseType_network = htonl(responseType);
+            
+            ssize_t operationResult = -1;
+            operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
+            if (operationResult != sizeof(uint32_t)) {
+                perror("Binder to server: Send response failed\n");
+                return -1;
+            }
+            
             break;
         }
         case MSG_CLIENT_BINDER_LOCATE: {
