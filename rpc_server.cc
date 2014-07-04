@@ -98,7 +98,17 @@ uint32_t argTypesLength(int *argTypes) {
 
 #define MAX_NUMBER_OF_CLIENTS 10
 // Socket descriptor of server for clients
-int serverForClientSocket;
+int serverForClientSocket; // server Listening socket
+int serverConnections[MAX_NUMBER_OF_CLIENTS]; // Array of connected clients
+
+fd_set serverSocketsFD; // Socket file descriptors that we want to wake up for
+int serverHighestSocket; // Highest # of socket file descriptor
+
+void serverBuildConnectionList();
+int serverReadSockets();
+int serverHandleNewConnection();
+int serverDealWithData(int connectionNumber);
+
 // Socket descriptor of server to binder
 int serverToBinderSocket;
 
@@ -116,7 +126,6 @@ std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
  *
  *  @return result of rpcInit()
  */
-
 int rpcInit() {
     std::cout << "rpcInit()" << std::endl;
     
@@ -186,7 +195,10 @@ int rpcInit() {
     printf("SERVER_PORT %d\n", ntohs(clientForServer.sin_port));
     portNumber = ntohs(clientForServer.sin_port);
     
-    // Does need to handle multi clients???
+    // Since there is only one sock, this is the highest
+    serverHighestSocket = serverForClientSocket;
+    // Clear the clients
+    memset((char *) &serverConnections, 0, sizeof(serverConnections));
     
     // 2, Create socket connection with Binder
     serverToBinderSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -220,10 +232,10 @@ int rpcInit() {
  *      Message format is Length(4 bytes) + Type(4 bytes) + Message
  *      Message type is MSG_SERVER_BINDER_REGISTER
  *      Message is REGISTER, server_identifier, port, name, argTypes
+ *  3,  Receive registration response from binder
  *
  *  @return result of rpcRegister()
  */
-
 int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
     
@@ -298,7 +310,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
 //    }
 //    printf("\n");
     
-    // Receive response from binder
+    // 3,  Receive registration response from binder
     uint32_t responseType_network = 0;
     uint32_t responseType = 0;
     ssize_t receivedSize = -1;
@@ -319,9 +331,110 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     }
 }
 
+/**
+ *  rpcExecute()
+ *  
+ *  1, Handle client calls
+ *
+ *  @return result of rpcExecute()
+ */
 int rpcExecute() {
     std::cout << "rpcExecute()" << std::endl;
-    sleep(2);
+//    sleep(2);
+    int numberOfReadSockets; // Number of sockets ready for reading
+    // Server loop
+    while (1) {
+        serverBuildConnectionList();
+        //        timeout.tv_sec = 1;
+        //        timeout.tv_usec = 0;
+        numberOfReadSockets = select(serverHighestSocket + 1, &serverSocketsFD, NULL, NULL, NULL);
+        if (numberOfReadSockets < 0) {
+            perror("Select error");
+            return -1;
+        }
+        if (numberOfReadSockets > 0) {
+            if (serverReadSockets() < 0) {
+                return -1;
+            }
+        }
+    }
+    
+    close(serverForClientSocket);
+    
+    return 0;
+}
+
+void serverBuildConnectionList() {
+    // Clears out the fd_set called socks
+	FD_ZERO(&serverSocketsFD);
+	
+    // Adds listening sock to socks
+	FD_SET(serverForClientSocket, &serverSocketsFD);
+	
+    // Add the new connection sock to socks
+    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+        if (serverConnections[i] != 0) {
+            FD_SET(serverConnections[i], &serverSocketsFD);
+            if (serverConnections[i] > serverHighestSocket) {
+                serverHighestSocket = serverConnections[i];
+            }
+        }
+    }
+}
+int serverReadSockets() {
+    // If listening sock is woked up, there is a new client come in
+    if (FD_ISSET(serverForClientSocket, &serverSocketsFD)) {
+        if(serverHandleNewConnection() < 0) {
+            return -1;
+        }
+    }
+    
+    // Check whether there is new data come in
+    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+        if (FD_ISSET(serverConnections[i], &serverSocketsFD)) {
+            if (serverDealWithData(i) < 0) {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+int serverHandleNewConnection() {
+    int newSock;
+    struct sockaddr_in client;
+    int addr_size = sizeof(struct sockaddr_in);
+    
+    // Try to accept a new connection
+    newSock = accept(serverForClientSocket, (struct sockaddr *)&client, (socklen_t *)&addr_size);
+    if (newSock < 0) {
+        perror("Accept failed");
+        return -1;
+    }
+    // Add this new client to clients
+    for (int i = 0; (i < MAX_NUMBER_OF_CLIENTS) && (i != -1); i++) {
+        if (serverConnections[i] == 0) {
+            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
+            serverConnections[i] = newSock;
+            newSock = -1;
+            break;
+        }
+    }
+    if (newSock != -1) {
+        perror("No room left for new client.\n");
+        close(newSock);
+        return -1;
+    }
+    
+    return 0;
+}
+
+int serverDealWithData(int connectionNumber) {
+    // Get the socket descriptor
+    int connectionSocket = serverConnections[connectionNumber];
+    
+    // Dispatch a new thread to handle procedure execution
+    
     return 0;
 }
 
