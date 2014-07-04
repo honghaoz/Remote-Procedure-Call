@@ -172,6 +172,11 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     return 0;
 }
 
+int executeRequest(char* name, int* argTypes, void** args, int sockfd){
+    
+    return 0;
+}
+
 /******************* Client Functions ****************
  *
  *  Description: Client related functions
@@ -184,11 +189,23 @@ int rpcCall(char* name, int* argTypes, void** args) {
     int binder_fd, server_fd;
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
-        std::cerr<<"Connection Error Ocurrs!"<<std::endl;
+        std::cerr<<"Binder Connection Error Ocurrs!"<<std::endl;
         return -1;
     }
     
     locationRequest(name, argTypes,binder_fd);
+    
+    //get the ip and port from binder
+    
+    char* server_host;
+    char* server_port;
+    int server_sockfd;
+    
+    server_sockfd = Connection(server_host, server_port);
+    if(server_fd < 0){
+        std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
+        return -1;
+    }
     
     
     //sending message
