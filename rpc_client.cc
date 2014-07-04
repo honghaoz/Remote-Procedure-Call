@@ -84,6 +84,13 @@ int ConnectToBinder(){
     }
 }
 
+int ConnectToServer(char* hostname, char* portnumber){
+    int sockfd;
+    sockfd = Connection(hostname, portnumber);
+    
+    
+}
+
 int locationRequest(char* name, int* argTypes, int sockfd){
     
     unsigned int remained_size;
@@ -161,7 +168,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
 
 int rpcCall(char* name, int* argTypes, void** args) {
     std::cout << "rpcCall(" << name << ")" << std::endl;
-    int binder_fd;
+    int binder_fd, server_fd;
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
         std::cerr<<"Connection Error Ocurrs!"<<std::endl;
