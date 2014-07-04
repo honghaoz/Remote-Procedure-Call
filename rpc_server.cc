@@ -19,80 +19,9 @@
 #include "rpc.h"
 //using namespace std;
 
-/******************* Helper Functions ****************
+/******************* Server  ************************
  *
- *  Description: Some handy functions
- *
- ****************************************************/
-
-/**
- *  Convert unsigned 32 bit integer to a bit string
- *
- *  @param x unsigned 32 bit integer
- *
- *  @return string representing in bit
- */
-const char *u32ToBit(uint32_t x)
-{
-    static char b[36]; // includes 32 bits, 3 spaces and 1 trailing zero
-    b[0] = '\0';
-    
-    u_int32_t z;
-    int i = 1;
-    for (z = 0b10000000000000000000000000000000; z > 0; z >>= 1, i++)
-    {
-        strcat(b, ((x & z) == z) ? "1" : "0");
-        if (i % 8 == 0) strcat(b, " "); // seperate 8 bits by a space
-    }
-    
-    return b;
-}
-
-void printBitRepresentation(BYTE *x, int byteNumber) {
-    char bits[byteNumber * 4 + byteNumber / 4];
-    bits[0] = '\0';
-    //    printf("%d, %d\n", sizeof(ccc), sizeof(bits));
-    int i = 0;
-    while (byteNumber > 0) {
-        if (byteNumber > 4) {
-            uint32_t z, xx;
-            memcpy(&xx, x + 4 * i, 4);
-            printf("%s\n", u32ToBit(xx));
-            for (z = 0b10000000000000000000000000000000; z > 0; z >>= 1)
-            {
-                strcat(bits, ((xx & z) == z) ? "1" : "0");
-            }
-            i++;
-            byteNumber -= 4;
-            strcat(bits, " ");
-//            printf("'%s'\n", bits);
-        }
-        else {
-            uint32_t z, xx;
-            memcpy(&xx, x + 4 * i, byteNumber);
-            printf("%s\n", u32ToBit(xx));
-            for (z = pow(2, byteNumber * 8 - 1); z > 0; z >>= 1)
-            {
-                strcat(bits, ((xx & z) == z) ? "1" : "0");
-            }
-            byteNumber -= byteNumber;
-//            printf("'%s'\n", bits);
-        }
-    }
-//    printf("%s\n", bits);
-}
-
-uint32_t argTypesLength(int *argTypes) {
-    uint32_t i = 0;
-    while (argTypes[i] != 0) {
-        i++;
-    }
-    return i + 1;
-}
-
-/******************* Server Functions ****************
- *
- *  Description: Server related functions
+ *  Description: Server related variables and functions
  *
  ****************************************************/
 
@@ -100,14 +29,8 @@ uint32_t argTypesLength(int *argTypes) {
 // Socket descriptor of server for clients
 int serverForClientSocket; // server Listening socket
 int serverConnections[MAX_NUMBER_OF_CLIENTS]; // Array of connected clients
-
 fd_set serverSocketsFD; // Socket file descriptors that we want to wake up for
 int serverHighestSocket; // Highest # of socket file descriptor
-
-void serverBuildConnectionList();
-int serverReadSockets();
-int serverHandleNewConnection();
-int serverDealWithData(int connectionNumber);
 
 // Socket descriptor of server to binder
 int serverToBinderSocket;
@@ -115,22 +38,45 @@ int serverToBinderSocket;
 // Server identifier and port number
 char ipv4Address[INET_ADDRSTRLEN];
 int portNumber;
-
+// Server registered procedures
 std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
 
-/**
- *  rpcInit()
+
+
+
+
+
+
+/************************* rpcInit() *************************
  *
  *  1,  Set up server listen sockets for clients
  *  2,  Create socket connection with Binder
  *
- *  @return result of rpcInit()
- */
+ *************************************************************/
+int serverForClientsInit();
+int serverToBinderInit();
+
 int rpcInit() {
     std::cout << "rpcInit()" << std::endl;
     
     // 1, Set up server listen sockets for clients
+    int status = serverForClientsInit();
+    if (status < 0) {
+        return -1;
+    }
     
+    // 2, Create socket connection with Binder
+    status = -1;
+    status = serverToBinderInit();
+    if (status < 0) {
+        return -1;
+    }
+    
+    return 0;
+}
+
+// Init socket for clients and listen it
+int serverForClientsInit() {
     // Get IPv4 address for this host
     struct addrinfo hints, *res, *p;
     int status;
@@ -168,7 +114,7 @@ int rpcInit() {
     
     int addr_size;
     setsockopt(serverForClientSocket, SOL_SOCKET, SO_REUSEADDR, &addr_size, sizeof(addr_size)); // So that we can re-bind to it without TIME_WAIT problems
-
+    
     // Prepare the sockaddr_in structure
     struct sockaddr_in clientForServer;
     memset(&clientForServer, 0, sizeof(struct sockaddr_in));
@@ -182,10 +128,10 @@ int rpcInit() {
         perror("Bind failed");
         return -1;
     }
-
+    
     // Listen
     listen(serverForClientSocket , MAX_NUMBER_OF_CLIENTS);
-
+    
     // Print out port number
     socklen_t addressLength = sizeof(clientForServer);
     if (getsockname(serverForClientSocket, (struct sockaddr*)&clientForServer, &addressLength) == -1) {
@@ -199,14 +145,17 @@ int rpcInit() {
     serverHighestSocket = serverForClientSocket;
     // Clear the clients
     memset((char *) &serverConnections, 0, sizeof(serverConnections));
-    
-    // 2, Create socket connection with Binder
+    return 0;
+}
+
+// Init socket to binder and connect it
+int serverToBinderInit() {
     serverToBinderSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverToBinderSocket == -1) {
         perror("Server to binder: Could not create socket\n");
         return -1;
     }
-
+    
     struct sockaddr_in serverToBinder;
     // Set address
 #warning Need to change to dynamic address
@@ -214,18 +163,24 @@ int rpcInit() {
     serverToBinder.sin_family = AF_INET;
     serverToBinder.sin_port = htons(8888);//htons(atoi(getenv("BINDER_PORT")));
     
-
+    
     // Connect
     if (connect(serverToBinderSocket, (struct sockaddr *)&serverToBinder, sizeof(struct sockaddr_in)) == -1) {
         perror("Server to binder: Connect failed. Error");
         return -1;
     }
-    
     return 0;
 }
 
-/**
- *  rpcRegister(char* name, int* argTypes, skeleton f)
+
+
+
+
+
+
+
+
+/******** rpcRegister(char* name, int* argTypes, skeleton f) **********
  *
  *  1,  Server add map entry: (name, argTypes) -> f
  *  2,  Send procedure to binder and register server procedure
@@ -234,8 +189,7 @@ int rpcInit() {
  *      Message is [server_identifier, port, name, argTypes]
  *  3,  Receive registration response from binder
  *
- *  @return result of rpcRegister()
- */
+ **********************************************************************/
 int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
     
@@ -331,22 +285,32 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     }
 }
 
-/**
- *  rpcExecute()
+
+
+
+
+
+
+
+
+/************************ rpcExecute() **************************
  *  
  *  1, Handle client calls
  *
- *  @return result of rpcExecute()
- */
+ ****************************************************************/
+
+// Server for clients functions
+void serverBuildConnectionList();
+int serverReadSockets();
+int serverHandleNewConnection();
+int serverDealWithData(int connectionNumber);
+
 int rpcExecute() {
     std::cout << "rpcExecute()" << std::endl;
-//    sleep(2);
     int numberOfReadSockets; // Number of sockets ready for reading
     // Server loop
     while (1) {
         serverBuildConnectionList();
-        //        timeout.tv_sec = 1;
-        //        timeout.tv_usec = 0;
         numberOfReadSockets = select(serverHighestSocket + 1, &serverSocketsFD, NULL, NULL, NULL);
         if (numberOfReadSockets < 0) {
             perror("Select error");
@@ -397,7 +361,6 @@ int serverReadSockets() {
     }
     return 0;
 }
-
 int serverHandleNewConnection() {
     int newSock;
     struct sockaddr_in client;
@@ -440,7 +403,6 @@ int serverResponse(int connectionSocket, messageType responseType) {
     }
     return 0;
 }
-
 int serverDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = serverConnections[connectionNumber];
@@ -506,8 +468,65 @@ int serverDealWithData(int connectionNumber) {
     }
     printf("Received length of message body: %zd\n", receivedSize);
     
-    // [name,argTypes,args,]
+    // Message body: [name,argTypes,args,]
+    char *name = NULL;
+    int *argTypes = NULL;
+    void ** args = NULL;
+    int lastSeperatorIndex = -1;
+    int messageCount = 0;
     
+    enum messageType responseType = LOC_SUCCESS;
+    // Process message body, initialize ip, port, name, argTypes
+    for (int i = 0; i < receivedSize && responseType == LOC_SUCCESS; i++) {
+        if (messageBody[i] == ',') {
+            switch (messageCount) {
+                case 0: {
+                    uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
+                    name = (char *)malloc(sizeof(char) * sizeOfName);
+                    memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
+                    break;
+                }
+                case 1: {
+                    uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
+                    argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                    memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                    break;
+                }
+                case 2: {
+                    uint32_t sizeOfArgs = i - (lastSeperatorIndex + 1);
+                    args = (void **)malloc(sizeof(BYTE) * sizeOfArgs);
+                    memcpy(args, messageBody + lastSeperatorIndex + 1, sizeOfArgs);
+                    break;
+                }
+                default:
+                    perror("Message Body Error\n");
+                    responseType = LOC_FAILURE;
+                    break;
+            }
+            lastSeperatorIndex = i;
+            messageCount++;
+        }
+    }
+//    printf("Locate Name: %s\n", name);
+//    printf("Locate ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%ud ", argTypes[i]);
+//    }
+//    printf("\n");
+//    if (responseType == LOC_SUCCESS) {
+//        std::pair<char *, int *> queryKey(name, argTypes);
+//        std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
+//        ipv4Address = queryResult.first;
+//        portNumber = queryResult.second;
+//        printf("Located IP: %s\n", ipv4Address);
+//        printf("Located Port: %d\n", portNumber);
+//    } else {
+//        free(ipv4Address);
+//        free(name);
+//        free(argTypes);
+//    }
+//    binderResponse(connectionSocket, responseType);
+
     
     
     // Dispatch a new thread to handle procedure execution
@@ -515,4 +534,3 @@ int serverDealWithData(int connectionNumber) {
     
     return 0;
 }
-
