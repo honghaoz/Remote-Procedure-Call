@@ -209,14 +209,23 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     
     BYTE messageBody[totalSize];
     char seperator = ',';
-    memcpy(messageBody, ipv4Address, sizeOfIp); // [ip]
-    memcpy(messageBody + sizeOfIp, &seperator, 1); // [ip,]
-    memcpy(messageBody + sizeOfIp + 1, &portNumber, sizeOfPort); // [ip,portnum]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort, &seperator, 1); // [ip,portnum,]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1, name, sizeOfName); // [ip,portnum,name]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName, &seperator, 1); // [ip,portnum,name,]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName + 1 + sizeOfArgTypes, &seperator, 1); // [ip,portnum,name,argTypes,]
+    uint32_t sizeOfSeperator = sizeof(seperator);
+    int offset = 0;
+    memcpy(messageBody + offset, ipv4Address, sizeOfIp); // [ip]
+    offset += sizeOfIp;
+    memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,]
+    offset += sizeOfSeperator;
+    memcpy(messageBody + offset, &portNumber, sizeOfPort); // [ip,portnum]
+    offset += sizeOfPort;
+    memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,portnum,]
+    offset += sizeOfSeperator;
+    memcpy(messageBody + offset, name, sizeOfName); // [ip,portnum,name]
+    offset += sizeOfName;
+    memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,portnum,name,]
+    offset += sizeOfSeperator;
+    memcpy(messageBody + offset, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    offset += sizeOfArgTypes;
+    memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,portnum,name,argTypes,]
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;

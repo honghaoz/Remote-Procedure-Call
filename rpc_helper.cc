@@ -83,10 +83,54 @@ void printBitRepresentation(BYTE *x, int byteNumber) {
     //    printf("%s\n", bits);
 }
 
+// Return length of argTypes, includes last 0
 uint32_t argTypesLength(int *argTypes) {
     uint32_t i = 0;
     while (argTypes[i] != 0) {
         i++;
     }
     return i + 1;
+}
+
+// Return size of type from an integer in argTypes
+uint32_t argSize(uint32_t argInteger) {
+    switch ((argInteger & ARG_TYPE_MASK)) {
+        case ARG_CHAR:
+            return sizeof(char);
+            break;
+        case ARG_SHORT:
+            return sizeof(short);
+            break;
+        case ARG_INT:
+            return sizeof(int);
+            break;
+        case ARG_LONG:
+            return sizeof(long);
+            break;
+        case ARG_DOUBLE:
+            return sizeof(double);
+            break;
+        case ARG_FLOAT:
+            return sizeof(float);
+            break;
+        default:
+            perror("Arg type error!\n");
+            return 0;
+            break;
+    }
+}
+
+// Return total size of args
+uint32_t argsSize(int *argTypes) {
+    uint32_t result = 0;
+    uint32_t lengthOfTypes = argTypesLength(argTypes);
+    for (int i = 0; i < lengthOfTypes - 1; i++) {
+        int lengthOfArray = argTypes[i] & ARG_ARRAY_LENGTH_MASK;
+        // If length is 0, scalar
+        if (lengthOfArray == 0) {
+            lengthOfArray = 1;
+        }
+        result += lengthOfArray * argSize(argTypes[i]);
+    }
+    return result;
 }
