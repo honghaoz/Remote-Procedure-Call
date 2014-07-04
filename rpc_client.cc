@@ -126,10 +126,14 @@ int locationRequest(char* name, int* argTypes, int sockfd){
 
     BYTE messageBody[totalSize];
     char seperator = ',';
-    memcpy(messageBody, name, sizeOfName); // [ip,portnum,name]
-    memcpy(messageBody + sizeOfName, &seperator, 1); // [ip,portnum,name,]
-    memcpy(messageBody + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
-    memcpy(messageBody + sizeOfName + 1 + sizeOfArgTypes, &seperator, 1); // [ip,portnum,name,argTypes,]
+    int offset = 0;
+    memcpy(messageBody+offset, name, sizeOfName); // [ip,portnum,name]
+    offset += sizeOfName;
+    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,]
+    offset += 1;
+    memcpy(messageBody + offset, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    offset += sizeOfArgTypes;
+    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,argTypes,]
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;
