@@ -427,9 +427,25 @@ int serverHandleNewConnection() {
     return 0;
 }
 
+// Server send back response
+int serverResponse(int connectionSocket, messageType responseType) {
+    // Send response message to server
+    uint32_t responseType_network = htonl(responseType);
+    
+    ssize_t operationResult = -1;
+    operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Server sends response failed\n");
+        return -1;
+    }
+    return 0;
+}
+
 int serverDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = serverConnections[connectionNumber];
+    
+    // Expected Message: [MessageLength][MessageType][name,argTypes,args,]
     
     // Prepare for message length, message type
     uint32_t messageLength_network = 0;
@@ -450,11 +466,13 @@ int serverDealWithData(int connectionNumber) {
         return 0;
     }
     else if (receivedSize != sizeof(uint32_t)) {
-        perror("Binder received wrong length of message length\n");
+        perror("Server received wrong length of message length\n");
+        serverResponse(connectionSocket, LOC_FAILURE);
         return -1;
     }
     else { // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
+        serverResponse(connectionSocket, LOC_FAILURE);
         messageLength = ntohl(messageLength_network);
     }
     
@@ -462,11 +480,18 @@ int serverDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
-        perror("Binder received wrong length of message type\n");
+        perror("Server received wrong length of message type\n");
+        serverResponse(connectionSocket, LOC_FAILURE);
         return -1;
     } else { // Receive message length correctly
         printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
+    }
+    // If type is not LOC_REQUEST
+    if (messageType != LOC_REQUEST) {
+        perror("Server received wrong message type\n");
+        serverResponse(connectionSocket, LOC_FAILURE);
+        return -1;
     }
     
     // Allocate messageBody
@@ -476,12 +501,13 @@ int serverDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
-        perror("Binder received wrong length of message body\n");
+        perror("Server received wrong length of message body\n");
         return -1;
     }
     printf("Received length of message body: %zd\n", receivedSize);
     
-    //
+    // [name,argTypes,args,]
+    
     
     
     // Dispatch a new thread to handle procedure execution
