@@ -84,7 +84,7 @@ int ConnectToBinder(){
     }
 }
 
-int locationRequest(std::string name, int* argTypes, int sockfd){
+int locationRequest(char* name, int* argTypes, int sockfd){
     
     unsigned int remained_size;
     int sent_size;
@@ -101,7 +101,51 @@ int locationRequest(std::string name, int* argTypes, int sockfd){
             remained_size -= sent_size;
         }
     }
+    // Prepare message content
+    uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
+    uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
+    uint32_t totalSize = sizeOfName + sizeOfArgTypes + 4;
+    //    printf("%d + 1 + %d + 1 + %d + 1 + %d + 1 = %d\n", sizeOfIp, sizeOfPort, sizeOfName, sizeOfArgTypes, totalSize);
     
+    BYTE messageBody[totalSize];
+    char seperator = ',';
+    memcpy(messageBody, name, sizeOfName); // [ip,portnum,name]
+    memcpy(messageBody + sizeOfName, &seperator, 1); // [ip,portnum,name,]
+    memcpy(messageBody + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    memcpy(messageBody + sizeOfName + 1 + sizeOfArgTypes, &seperator, 1); // [ip,portnum,name,argTypes,]
+    
+    // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
+    uint32_t messageLength = totalSize;
+    uint32_t messageType = REGISTER;
+    uint32_t messageLength_network = htonl(messageLength);
+    uint32_t messageType_network = htonl(messageType);
+    
+    // Send message length (4 bytes)
+    ssize_t operationResult = -1;
+    operationResult = send(serverToBinderSocket, &messageLength_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Server registion to binder: Send message length failed\n");
+        return -1;
+    }
+    printf("Send message length succeed: %zd\n", operationResult);
+    
+    // Send message type (4 bytes)
+    operationResult = -1;
+    operationResult = send(serverToBinderSocket, &messageType_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Server registion to binder: Send message type failed\n");
+        return -1;
+    }
+    printf("Send message type succeed: %zd\n", operationResult);
+    
+    // Send message body (varied bytes)
+    operationResult = -1;
+    operationResult = send(serverToBinderSocket, &messageBody, messageLength, 0);
+    if (operationResult != messageLength) {
+        perror("Server registion to binder: Send message body failed\n");
+        return -1;
+    }
+    printf("Send message body succeed: %zd\n", operationResult);
     
     return 0;
 }
