@@ -107,6 +107,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     uint32_t totalSize = sizeOfName + sizeOfArgTypes + 4;
     //    printf("%d + 1 + %d + 1 + %d + 1 + %d + 1 = %d\n", sizeOfIp, sizeOfPort, sizeOfName, sizeOfArgTypes, totalSize);
     
+<<<<<<< HEAD
     BYTE messageBody[totalSize];
     char seperator = ',';
     memcpy(messageBody, name, sizeOfName); // [ip,portnum,name]
@@ -147,6 +148,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     }
     printf("Send message body succeed: %zd\n", operationResult);
     
+
     return 0;
 }
 

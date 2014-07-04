@@ -283,8 +283,6 @@ int binderDealWithData(int connectionNumber) {
                             }
                             ipv4Address = (char*)malloc(sizeof(char) * sizeOfIp);
                             memcpy(ipv4Address, messageBody + lastSeperatorIndex + 1, sizeOfIp);
-                            lastSeperatorIndex = i;
-                            messageCount++;
                             break;
                         }
                         case 1: {
@@ -294,29 +292,27 @@ int binderDealWithData(int connectionNumber) {
                                 responseType = REGISTER_FAILURE;
                             }
                             memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
-                            lastSeperatorIndex = i;
-                            messageCount++;
                             break;
                         }
                         case 2: {
                             uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
                             name = (char *)malloc(sizeof(char) * sizeOfName);
                             memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
-                            lastSeperatorIndex = i;
-                            messageCount++;
                             break;
                         }
                         case 3: {
                             uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
                             argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
                             memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
-                            lastSeperatorIndex = i;
-                            messageCount++;
                             break;
                         }
                         default:
+                            perror("Message Body Error\n");
+                            responseType = REGISTER_FAILURE;
                             break;
                     }
+                    lastSeperatorIndex = i;
+                    messageCount++;
                 }
             }
             // Process completed
@@ -325,14 +321,14 @@ int binderDealWithData(int connectionNumber) {
 //            }
 //            printf("\n");
             
-//            printf("IP: %s\n", ipv4Address);
-//            printf("Port: %d\n", portNumber);
-//            printf("Name: %s\n", name);
-//            printf("ArgTypes: ");
-//            for (int i = 0; i < argTypesLength(argTypes); i++) {
-//                printf("%ud ", argTypes[i]);
-//            }
-//            printf("\n");
+            printf("IP: %s\n", ipv4Address);
+            printf("Port: %d\n", portNumber);
+            printf("Name: %s\n", name);
+            printf("ArgTypes: ");
+            for (int i = 0; i < argTypesLength(argTypes); i++) {
+                printf("%ud ", argTypes[i]);
+            }
+            printf("\n");
             
             // If message is correct, register, else free
             if (responseType == REGISTER_SUCCESS) {
@@ -344,7 +340,6 @@ int binderDealWithData(int connectionNumber) {
                 free(ipv4Address);
                 free(name);
                 free(argTypes);
-
             }
             
             // Send response message to server
