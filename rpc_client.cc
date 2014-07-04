@@ -84,10 +84,19 @@ int ConnectToBinder(){
     }
 }
 
+/***************** connect to server *************************
+ Purpose: 
+ 
+ return: (integer) the socket fd or -1 as error occurs
+ ********************************************************/
 int ConnectToServer(char* hostname, char* portnumber){
     int sockfd;
     sockfd = Connection(hostname, portnumber);
-    
+    if(sockfd < 0){
+        std::cerr<<"wrong socket identifier!"<<std::endl;
+        exit(-1);
+    }
+    return sockfd;
     
 }
 
