@@ -117,13 +117,13 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;
-    uint32_t messageType = REGISTER;
+    uint32_t messageType = LOC_REQUEST;
     uint32_t messageLength_network = htonl(messageLength);
     uint32_t messageType_network = htonl(messageType);
     
     // Send message length (4 bytes)
     ssize_t operationResult = -1;
-    operationResult = send(serverToBinderSocket, &messageLength_network, sizeof(uint32_t), 0);
+    operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("Server registion to binder: Send message length failed\n");
         return -1;
@@ -132,7 +132,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     
     // Send message type (4 bytes)
     operationResult = -1;
-    operationResult = send(serverToBinderSocket, &messageType_network, sizeof(uint32_t), 0);
+    operationResult = send(sockfd, &messageType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("Server registion to binder: Send message type failed\n");
         return -1;
@@ -141,7 +141,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     
     // Send message body (varied bytes)
     operationResult = -1;
-    operationResult = send(serverToBinderSocket, &messageBody, messageLength, 0);
+    operationResult = send(sockfd, &messageBody, messageLength, 0);
     if (operationResult != messageLength) {
         perror("Server registion to binder: Send message body failed\n");
         return -1;
