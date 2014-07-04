@@ -230,8 +230,8 @@ int rpcInit() {
  *  1,  Server add map entry: (name, argTypes) -> f
  *  2,  Send procedure to binder and register server procedure
  *      Message format is Length(4 bytes) + Type(4 bytes) + Message
- *      Message type is MSG_SERVER_BINDER_REGISTER
- *      Message is REGISTER, server_identifier, port, name, argTypes
+ *      Message type is REGISTER
+ *      Message is [server_identifier, port, name, argTypes]
  *  3,  Receive registration response from binder
  *
  *  @return result of rpcRegister()
@@ -262,7 +262,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1, name, sizeOfName); // [ip,portnum,name]
     memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName, &seperator, 1); // [ip,portnum,name,]
     memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName + 1 + sizeOfArgTypes, &seperator, 1); // [ip,portnum,name,argTypes]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName + 1 + sizeOfArgTypes, &seperator, 1); // [ip,portnum,name,argTypes,]
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;

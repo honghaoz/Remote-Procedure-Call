@@ -23,14 +23,7 @@ extern "C" {
 #define ARG_IO_MASK 0xFF000000
 #define ARG_TYPE_MASK 0x00FF0000
 #define ARG_ARRAY_LENGTH_MASK 0x0000FFFF
-  
-#warning Need to resolve
-    
-#define MSG_SERVER_BINDER_REGISTER 1
-#define MSG_CLIENT_BINDER_LOCATE 2
-#define MSG_CLIENT_BINDER_TERMINATE 3
-#define MSG_CLIENT_SERVER_EXECUTE 4
-    
+
 enum messageType{
     REGISTER = 1,
     REGISTER_SUCCESS = 2,
@@ -43,9 +36,6 @@ enum messageType{
     EXECUTE_FAILURE = 9,
     TERMINATE = 10
 };
-
-//#define MSG_LENGTH_MASK 0xFFFF0000
-//#define MSG_TYPE_MASK 0x0000FFFF
 
 #define BYTE uint8_t
 typedef int (*skeleton)(int *, void **);

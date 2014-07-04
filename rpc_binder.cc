@@ -261,7 +261,7 @@ int binderDealWithData(int connectionNumber) {
     printf("Received length of message body: %zd\n", receivedSize);
     
     switch (messageType) {
-        case MSG_SERVER_BINDER_REGISTER: {
+        case REGISTER: {
             char *ipv4Address = NULL;
             int portNumber = 0;
             char *name = NULL;
@@ -359,15 +359,15 @@ int binderDealWithData(int connectionNumber) {
             
             break;
         }
-        case MSG_CLIENT_BINDER_LOCATE: {
+        case LOC_REQUEST: {
             // Process message body
             break;
         }
-        case MSG_CLIENT_BINDER_TERMINATE: {
+        case TERMINATE: {
             // Process message body
             break;
         }
-        case MSG_CLIENT_SERVER_EXECUTE: {
+        case EXECUTE: {
             // Process message body
             break;
         }
