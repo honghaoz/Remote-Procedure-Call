@@ -206,6 +206,20 @@ int binderHandleNewConnection() {
     return 0;
 }
 
+// Server send back response
+int binderResponse(int connectionSocket, messageType responseType) {
+    // Send response message to server
+    uint32_t responseType_network = htonl(responseType);
+    
+    ssize_t operationResult = -1;
+    operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Binder sends response failed\n");
+        return -1;
+    }
+    return 0;
+}
+
 int binderDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = binderConnections[connectionNumber];
@@ -230,6 +244,7 @@ int binderDealWithData(int connectionNumber) {
     }
     else if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message length\n");
+        binderResponse(connectionSocket, REGISTER_FAILURE);
         return -1;
     }
     else { // Receive message length correctly
@@ -242,6 +257,7 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message type\n");
+        binderResponse(connectionSocket, REGISTER_FAILURE);
         return -1;
     } else { // Receive message length correctly
         printf("Received length of message type: %zd\n", receivedSize);
@@ -256,12 +272,14 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
         perror("Binder received wrong length of message body\n");
+        binderResponse(connectionSocket, REGISTER_FAILURE);
         return -1;
     }
     printf("Received length of message body: %zd\n", receivedSize);
     
     switch (messageType) {
         case REGISTER: {
+            // Message body: [ip,portnum,name,argTypes,]
             char *ipv4Address = NULL;
             int portNumber = 0;
             char *name = NULL;
@@ -270,7 +288,7 @@ int binderDealWithData(int connectionNumber) {
             int lastSeperatorIndex = -1;
             int messageCount = 0;
             
-            uint32_t responseType = REGISTER_SUCCESS;
+            enum messageType responseType = REGISTER_SUCCESS;
             // Process message body, initialize ip, port, name, argTypes
             for (int i = 0; i < receivedSize && responseType == REGISTER_SUCCESS; i++) {
                 if (messageBody[i] == ',') {
@@ -343,19 +361,72 @@ int binderDealWithData(int connectionNumber) {
             }
             
             // Send response message to server
-            uint32_t responseType_network = htonl(responseType);
-            
-            ssize_t operationResult = -1;
-            operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
-            if (operationResult != sizeof(uint32_t)) {
-                perror("Binder to server: Send response failed\n");
-                return -1;
-            }
+//            uint32_t responseType_network = htonl(responseType);
+//            
+//            ssize_t operationResult = -1;
+//            operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
+//            if (operationResult != sizeof(uint32_t)) {
+//                perror("Binder to server: Send response failed\n");
+//                return -1;
+//            }
+            binderResponse(connectionSocket, responseType);
             
             break;
         }
         case LOC_REQUEST: {
-            // Process message body
+            // Message body: [name,argTypes,]
+            char *name = NULL;
+            int *argTypes = NULL;
+            char *ipv4Address = NULL;
+            int portNumber = 0;
+            int lastSeperatorIndex = -1;
+            int messageCount = 0;
+            
+            enum messageType responseType = LOC_SUCCESS;
+            // Process message body, initialize ip, port, name, argTypes
+            for (int i = 0; i < receivedSize && responseType == LOC_SUCCESS; i++) {
+                if (messageBody[i] == ',') {
+                    switch (messageCount) {
+                        case 0: {
+                            uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
+                            name = (char *)malloc(sizeof(char) * sizeOfName);
+                            memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
+                            break;
+                        }
+                        case 1: {
+                            uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
+                            argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                            memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                            break;
+                        }
+                        default:
+                            perror("Message Body Error\n");
+                            responseType = LOC_FAILURE;
+                            break;
+                    }
+                    lastSeperatorIndex = i;
+                    messageCount++;
+                }
+            }
+            printf("Locate Name: %s\n", name);
+            printf("Locate ArgTypes: ");
+            for (int i = 0; i < argTypesLength(argTypes); i++) {
+                printf("%ud ", argTypes[i]);
+            }
+            printf("\n");
+            if (responseType == LOC_SUCCESS) {
+                std::pair<char *, int *> queryKey(name, argTypes);
+                std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
+                ipv4Address = queryResult.first;
+                portNumber = queryResult.second;
+                printf("Located IP: %s\n", ipv4Address);
+                printf("Located Port: %d\n", portNumber);
+            } else {
+                free(ipv4Address);
+                free(name);
+                free(argTypes);
+            }
+            binderResponse(connectionSocket, responseType);
             break;
         }
         case TERMINATE: {
