@@ -161,14 +161,15 @@ int locationRequest(char* name, int* argTypes, int sockfd){
 
 int rpcCall(char* name, int* argTypes, void** args) {
     std::cout << "rpcCall(" << name << ")" << std::endl;
-    int fd;
-    fd = ConnectToBinder();//connect to binder first
+    int binder_fd;
+    binder_fd = ConnectToBinder();//connect to binder first
     if(fd < 0){
         std::cerr<<"Connection Error Ocurrs!"<<std::endl;
         return -1;
     }
     
     locationRequest(name, argTypes,fd);
+    
     
     //sending message
     return 0;
