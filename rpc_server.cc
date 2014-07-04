@@ -301,14 +301,14 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
 //    }
 //    printf("\n");
 //
-//    printf("IP: %s\n", ipv4Address);
-//    printf("Port: %d\n", portNumber);
-//    printf("Name: %s\n", name);
-//    printf("ArgTypes: ");
-//    for (int i = 0; i < argTypesLength(argTypes); i++) {
-//        printf("%ud ", argTypes[i]);
-//    }
-//    printf("\n");
+    printf("IP: %s\n", ipv4Address);
+    printf("Port: %d\n", portNumber);
+    printf("Name: %s\n", name);
+    printf("ArgTypes: ");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%ud ", argTypes[i]);
+    }
+    printf("\n");
     
     // 3,  Receive registration response from binder
     uint32_t responseType_network = 0;
@@ -358,9 +358,7 @@ int rpcExecute() {
             }
         }
     }
-    
     close(serverForClientSocket);
-    
     return 0;
 }
 
@@ -433,7 +431,61 @@ int serverDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = serverConnections[connectionNumber];
     
+    // Prepare for message length, message type
+    uint32_t messageLength_network = 0;
+    uint32_t messageType_network = 0;
+    uint32_t messageLength = 0;
+    uint32_t messageType = 0;
+    
+    // Receive message length
+    ssize_t receivedSize = -1;
+    receivedSize = recv(connectionSocket, &messageLength_network, sizeof(uint32_t), 0);
+    // Connection lost
+    if (receivedSize == 0) {
+        printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
+        close(connectionSocket);
+        
+        // Set this place to be available
+        serverConnections[connectionNumber] = 0;
+        return 0;
+    }
+    else if (receivedSize != sizeof(uint32_t)) {
+        perror("Binder received wrong length of message length\n");
+        return -1;
+    }
+    else { // Receive message length correctly
+        printf("Received length of message length: %zd\n", receivedSize);
+        messageLength = ntohl(messageLength_network);
+    }
+    
+    // Receive message type
+    receivedSize = -1;
+    receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Binder received wrong length of message type\n");
+        return -1;
+    } else { // Receive message length correctly
+        printf("Received length of message type: %zd\n", receivedSize);
+        messageType = ntohl(messageType_network);
+    }
+    
+    // Allocate messageBody
+    BYTE *messageBody = (BYTE *)malloc(sizeof(BYTE) * messageLength);
+    
+    // Receive message body
+    receivedSize = -1;
+    receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
+    if (receivedSize != messageLength) {
+        perror("Binder received wrong length of message body\n");
+        return -1;
+    }
+    printf("Received length of message body: %zd\n", receivedSize);
+    
+    //
+    
+    
     // Dispatch a new thread to handle procedure execution
+    
     
     return 0;
 }

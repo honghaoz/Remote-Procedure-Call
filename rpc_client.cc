@@ -102,7 +102,7 @@ int locationRequest(std::string name, int* argTypes, int sockfd){
         }
     }
     
-    
+
     return 0;
 }
 
