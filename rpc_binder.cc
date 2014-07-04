@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <math.h>
+#include <utility>
+#include <map>
 #include "rpc.h"
 //using namespace std;
 
@@ -29,6 +31,8 @@ int binderListenSocket; // binder Listening socket
 int binderConnections[MAX_NUMBER_OF_CONNECTIONS]; // Array of connected connections
 fd_set binderSocketsFD; // Socket file descriptors that we want to wake up for
 int binderHighestSocket; // Highest # of socket file descriptor
+
+std::map<std::pair<char *, int *>, std::pair<char *, int>> binderProcedureToID;
 
 void binderBuildConnectionList();
 int binderReadSockets();
@@ -222,24 +226,25 @@ int binderDealWithData(int connectionNumber) {
         
         // Set this place to be available
         binderConnections[connectionNumber] = 0;
+        return 0;
     }
     else if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message length\n");
         return -1;
     }
     else { // Receive message length correctly
-        printf("%zd\n", receivedSize);
+        printf("Received length of message length: %zd\n", receivedSize);
         messageLength = ntohl(messageLength_network);
     }
     
     // Receive message type
     receivedSize = -1;
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
-    printf("%zd\n", receivedSize);
     if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message type\n");
         return -1;
     } else { // Receive message length correctly
+        printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
     }
     
@@ -253,10 +258,84 @@ int binderDealWithData(int connectionNumber) {
         perror("Binder received wrong length of message body\n");
         return -1;
     }
+    printf("Received length of message body: %zd\n", receivedSize);
     
     switch (messageType) {
         case MSG_SERVER_BINDER_REGISTER: {
-            // Process message body
+            char *ipv4Address = NULL;
+            int portNumber = 0;
+            char *name = NULL;
+            int *argTypes = NULL;
+            
+            int lastSeperatorIndex = -1;
+            int messageCount = 0;
+            // Process message body, initialize ip, port, name, argTypes
+            for (int i = 0; i < receivedSize; i++) {
+                if (messageBody[i] == ',') {
+                    switch (messageCount) {
+                        case 0: {
+                            uint32_t sizeOfIp = i - (lastSeperatorIndex + 1);
+                            ipv4Address = (char*)malloc(sizeof(char) * sizeOfIp);
+                            memcpy(ipv4Address, messageBody + lastSeperatorIndex + 1, sizeOfIp);
+                            lastSeperatorIndex = i;
+                            messageCount++;
+                            break;
+                        }
+                        case 1: {
+                            uint32_t sizeOfPort = i - (lastSeperatorIndex + 1);
+                            if (sizeOfPort != sizeof(portNumber)) {
+                                perror("port size error\n");
+                                return -1;
+                            }
+                            memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
+                            lastSeperatorIndex = i;
+                            messageCount++;
+                            break;
+                        }
+                        case 2: {
+                            uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
+                            name = (char *)malloc(sizeof(char) * sizeOfName);
+                            memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
+                            lastSeperatorIndex = i;
+                            messageCount++;
+                            break;
+                        }
+                        case 3: {
+                            uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
+                            argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                            memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                            lastSeperatorIndex = i;
+                            messageCount++;
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+            }
+            // Process completed
+//            for (int i = 0; i < receivedSize; i++) {
+//                printf("%c ", messageBody[i]);
+//            }
+//            printf("\n");
+            
+//            printf("IP: %s\n", ipv4Address);
+//            printf("Port: %d\n", portNumber);
+//            printf("Name: %s\n", name);
+//            printf("ArgTypes: ");
+//            for (int i = 0; i < argTypesLength(argTypes); i++) {
+//                printf("%ud ", argTypes[i]);
+//            }
+//            printf("\n");
+            
+            // Store this procedure in binder's data store
+            std::pair<char *, int *> procedureKey(name, argTypes);
+            std::pair<char *, int> ID(ipv4Address, portNumber);
+            binderProcedureToID[procedureKey] = ID;
+//            
+//            free(ipv4Address);
+//            free(name);
+//            free(argTypes);
             break;
         }
         case MSG_CLIENT_BINDER_LOCATE: {

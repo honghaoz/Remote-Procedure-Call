@@ -40,6 +40,7 @@ typedef int (*skeleton)(int *, void **);
 // Helper functions:
 const char *u32ToBit(uint32_t x);
 void printBitRepresentation(BYTE *x, int byteNumber);
+uint32_t argTypesLength(int *argTypes);
     
 // Server side:
 extern int rpcInit();

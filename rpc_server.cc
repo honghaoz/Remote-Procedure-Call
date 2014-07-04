@@ -106,7 +106,7 @@ int serverToBinderSocket;
 char ipv4Address[INET_ADDRSTRLEN];
 int portNumber;
 
-std::map<std::pair<char *, int *>, skeleton> procedureMap;
+std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
 
 /**
  *  rpcInit()
@@ -229,27 +229,28 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     
     //1,  Server add map entry: (name, argTypes) -> f
     std::pair<char *, int *> theProcedureSignature (name, argTypes);
-    procedureMap[theProcedureSignature] = f;
+    serverProcedureToSkeleton[theProcedureSignature] = f;
     
     //2,  Send procedure to binder and register server procedure
     
     // Prepare message content
     uint32_t sizeOfIp = (uint32_t)strlen(ipv4Address) + 1;
-    uint32_t sizeOfport = sizeof(portNumber);
+    uint32_t sizeOfPort = sizeof(portNumber);
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
     uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
-    uint32_t totalSize = sizeOfIp + sizeOfport + sizeOfName + sizeOfArgTypes + 3;
-//    printf("%d + %d + %d + %d = %d\n", sizeOfIp, sizeOfport, sizeOfName, sizeOfArgTypes, totalSize);
+    uint32_t totalSize = sizeOfIp + sizeOfPort + sizeOfName + sizeOfArgTypes + 4;
+//    printf("%d + 1 + %d + 1 + %d + 1 + %d + 1 = %d\n", sizeOfIp, sizeOfPort, sizeOfName, sizeOfArgTypes, totalSize);
     
     BYTE messageBody[totalSize];
     char seperator = ',';
     memcpy(messageBody, ipv4Address, sizeOfIp); // [ip]
     memcpy(messageBody + sizeOfIp, &seperator, 1); // [ip,]
-    memcpy(messageBody + sizeOfIp + 1, &portNumber, sizeOfport); // [ip,portnum]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfport, &seperator, 1); // [ip,portnum,]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfport + 1, name, sizeOfName); // [ip,portnum,name]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName, &seperator, 1); // [ip,portnum,name,]
-    memcpy(messageBody + sizeOfIp + 1 + sizeOfport + 1 + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    memcpy(messageBody + sizeOfIp + 1, &portNumber, sizeOfPort); // [ip,portnum]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort, &seperator, 1); // [ip,portnum,]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1, name, sizeOfName); // [ip,portnum,name]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName, &seperator, 1); // [ip,portnum,name,]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName + 1, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    memcpy(messageBody + sizeOfIp + 1 + sizeOfPort + 1 + sizeOfName + 1 + sizeOfArgTypes, &seperator, 1); // [ip,portnum,name,argTypes]
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;
@@ -265,18 +266,19 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     ssize_t operationResult = -1;
     operationResult = send(serverToBinderSocket, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Server registion to binder: Send message header failed\n");
+        perror("Server registion to binder: Send message length failed\n");
         return -1;
     }
+    printf("Send message length succeed: %zd\n", operationResult);
     
     // Send message type (4 bytes)
     operationResult = -1;
     operationResult = send(serverToBinderSocket, &messageType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Server registion to binder: Send message header failed\n");
+        perror("Server registion to binder: Send message type failed\n");
         return -1;
     }
-    printf("type succeed\n");
+    printf("Send message type succeed: %zd\n", operationResult);
     
     // Send message body (varied bytes)
     operationResult = -1;
@@ -285,12 +287,27 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
         perror("Server registion to binder: Send message body failed\n");
         return -1;
     }
+    printf("Send message body succeed: %zd\n", operationResult);
+//    for (int i = 0; i < messageLength; i++) {
+//        printf("%c ", messageBody[i]);
+//    }
+//    printf("\n");
+//
+//    printf("IP: %s\n", ipv4Address);
+//    printf("Port: %d\n", portNumber);
+//    printf("Name: %s\n", name);
+//    printf("ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%ud ", argTypes[i]);
+//    }
+//    printf("\n");
     
     return 0;
 }
 
 int rpcExecute() {
     std::cout << "rpcExecute()" << std::endl;
+    sleep(2);
     return 0;
 }
 
