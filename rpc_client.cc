@@ -163,12 +163,12 @@ int rpcCall(char* name, int* argTypes, void** args) {
     std::cout << "rpcCall(" << name << ")" << std::endl;
     int binder_fd;
     binder_fd = ConnectToBinder();//connect to binder first
-    if(fd < 0){
+    if(binder_fd < 0){
         std::cerr<<"Connection Error Ocurrs!"<<std::endl;
         return -1;
     }
     
-    locationRequest(name, argTypes,fd);
+    locationRequest(name, argTypes,binder_fd);
     
     
     //sending message
