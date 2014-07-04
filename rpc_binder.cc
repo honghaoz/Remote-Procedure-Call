@@ -34,11 +34,11 @@ int binderHighestSocket; // Highest # of socket file descriptor
 
 std::map<std::pair<char *, int *>, std::pair<char *, int>> binderProcedureToID;
 
-void binderBuildConnectionList();
-int binderReadSockets();
-int binderHandleNewConnection();
-int binderDealWithData(int connectionNumber);
-
+/********************** rpcBinderInit() *************************
+ *
+ *  1, Create binder socket for server and client, and listen it
+ *
+ ****************************************************************/
 int rpcBinderInit() {
     std::cout << "rpcBinderInit()" << std::endl;
 
@@ -114,6 +114,21 @@ int rpcBinderInit() {
     return 0;
 }
 
+
+
+
+
+
+/********************** rpcBinderListen() *************************
+ *
+ *  1, Handle message from server and client
+ *
+ ****************************************************************/
+void binderBuildConnectionList();
+int binderReadSockets();
+int binderHandleNewConnection();
+int binderDealWithData(int connectionNumber);
+
 int rpcBinderListen() {
     std::cout << "rpcBinderListen()" << std::endl;
     
@@ -139,7 +154,6 @@ int rpcBinderListen() {
     close(binderListenSocket);
     return 0;
 }
-
 void binderBuildConnectionList() {
 	// Clears out the fd_set called socks
 	FD_ZERO(&binderSocketsFD);
@@ -157,7 +171,6 @@ void binderBuildConnectionList() {
         }
     }
 }
-
 int binderReadSockets() {
     // If listening sock is woked up, there is a new client come in
     if (FD_ISSET(binderListenSocket, &binderSocketsFD)) {
@@ -176,7 +189,6 @@ int binderReadSockets() {
     }
     return 0;
 }
-
 int binderHandleNewConnection() {
     int newSock;
     struct sockaddr_in client;
@@ -207,19 +219,36 @@ int binderHandleNewConnection() {
 }
 
 // Server send back response
-int binderResponse(int connectionSocket, messageType responseType) {
+int binderResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
     // Send response message to server
     uint32_t responseType_network = htonl(responseType);
+    uint32_t responseErrorCode_network = htonl(errorCode);
     
+    // Send response type
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Binder sends response failed\n");
+        perror("Binder sends response type failed\n");
         return -1;
     }
+    
+    // Send response error code
+    operationResult = -1;
+    operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Binder sends response errorCode failed\n");
+        return -1;
+    }
+    
     return 0;
 }
 
+// Binder deal with three different message: Register, Locate and Terminate
+int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
+int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
+int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
+
+// Receive message length, message type and allocate message body
 int binderDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = binderConnections[connectionNumber];
@@ -244,7 +273,7 @@ int binderDealWithData(int connectionNumber) {
     }
     else if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message length\n");
-        binderResponse(connectionSocket, REGISTER_FAILURE);
+        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
         return -1;
     }
     else { // Receive message length correctly
@@ -257,7 +286,7 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message type\n");
-        binderResponse(connectionSocket, REGISTER_FAILURE);
+        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
         return -1;
     } else { // Receive message length correctly
         printf("Received length of message type: %zd\n", receivedSize);
@@ -272,169 +301,22 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
         perror("Binder received wrong length of message body\n");
-        binderResponse(connectionSocket, REGISTER_FAILURE);
+        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
         return -1;
     }
     printf("Received length of message body: %zd\n", receivedSize);
     
     switch (messageType) {
         case REGISTER: {
-            // Message body: [ip,portnum,name,argTypes,]
-            char *ipv4Address = NULL;
-            int portNumber = 0;
-            char *name = NULL;
-            int *argTypes = NULL;
-            
-            int lastSeperatorIndex = -1;
-            int messageCount = 0;
-            
-            enum messageType responseType = REGISTER_SUCCESS;
-            // Process message body, initialize ip, port, name, argTypes
-            for (int i = 0; i < receivedSize && responseType == REGISTER_SUCCESS; i++) {
-                if (messageBody[i] == ',') {
-                    switch (messageCount) {
-                        case 0: {
-                            uint32_t sizeOfIp = i - (lastSeperatorIndex + 1);
-                            if (sizeOfIp > 16) {
-                                // Size is too large
-                                responseType = REGISTER_FAILURE;
-                            }
-                            ipv4Address = (char*)malloc(sizeof(char) * sizeOfIp);
-                            memcpy(ipv4Address, messageBody + lastSeperatorIndex + 1, sizeOfIp);
-                            break;
-                        }
-                        case 1: {
-                            uint32_t sizeOfPort = i - (lastSeperatorIndex + 1);
-                            if (sizeOfPort != sizeof(portNumber)) {
-                                perror("port size error\n");
-                                responseType = REGISTER_FAILURE;
-                            }
-                            memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
-                            break;
-                        }
-                        case 2: {
-                            uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
-                            name = (char *)malloc(sizeof(char) * sizeOfName);
-                            memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
-                            break;
-                        }
-                        case 3: {
-                            uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
-                            argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
-                            memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
-                            break;
-                        }
-                        default:
-                            perror("Message Body Error\n");
-                            responseType = REGISTER_FAILURE;
-                            break;
-                    }
-                    lastSeperatorIndex = i;
-                    messageCount++;
-                }
-            }
-            // Process completed
-//            for (int i = 0; i < receivedSize; i++) {
-//                printf("%c ", messageBody[i]);
-//            }
-//            printf("\n");
-            
-            printf("IP: %s\n", ipv4Address);
-            printf("Port: %d\n", portNumber);
-            printf("Name: %s\n", name);
-            printf("ArgTypes: ");
-            for (int i = 0; i < argTypesLength(argTypes); i++) {
-                printf("%ud ", argTypes[i]);
-            }
-            printf("\n");
-            
-            // If message is correct, register, else free
-            if (responseType == REGISTER_SUCCESS) {
-                // Store this procedure in binder's data store
-                std::pair<char *, int *> procedureKey(name, argTypes);
-                std::pair<char *, int> ID(ipv4Address, portNumber);
-                binderProcedureToID[procedureKey] = ID;
-            } else  {
-                free(ipv4Address);
-                free(name);
-                free(argTypes);
-            }
-            
-            // Send response message to server
-//            uint32_t responseType_network = htonl(responseType);
-//            
-//            ssize_t operationResult = -1;
-//            operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
-//            if (operationResult != sizeof(uint32_t)) {
-//                perror("Binder to server: Send response failed\n");
-//                return -1;
-//            }
-            binderResponse(connectionSocket, responseType);
-            
+            return binderDealWithRegisterMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case LOC_REQUEST: {
-            // Message body: [name,argTypes,]
-            char *name = NULL;
-            int *argTypes = NULL;
-            char *ipv4Address = NULL;
-            int portNumber = 0;
-            int lastSeperatorIndex = -1;
-            int messageCount = 0;
-            
-            enum messageType responseType = LOC_SUCCESS;
-            // Process message body, initialize ip, port, name, argTypes
-            for (int i = 0; i < receivedSize && responseType == LOC_SUCCESS; i++) {
-                if (messageBody[i] == ',') {
-                    switch (messageCount) {
-                        case 0: {
-                            uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
-                            name = (char *)malloc(sizeof(char) * sizeOfName);
-                            memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
-                            break;
-                        }
-                        case 1: {
-                            uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
-                            argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
-                            memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
-                            break;
-                        }
-                        default:
-                            perror("Message Body Error\n");
-                            responseType = LOC_FAILURE;
-                            break;
-                    }
-                    lastSeperatorIndex = i;
-                    messageCount++;
-                }
-            }
-            printf("Locate Name: %s\n", name);
-            printf("Locate ArgTypes: ");
-            for (int i = 0; i < argTypesLength(argTypes); i++) {
-                printf("%ud ", argTypes[i]);
-            }
-            printf("\n");
-            if (responseType == LOC_SUCCESS) {
-                std::pair<char *, int *> queryKey(name, argTypes);
-                std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
-                ipv4Address = queryResult.first;
-                portNumber = queryResult.second;
-                printf("Located IP: %s\n", ipv4Address);
-                printf("Located Port: %d\n", portNumber);
-            } else {
-                free(ipv4Address);
-                free(name);
-                free(argTypes);
-            }
-            binderResponse(connectionSocket, responseType);
+            return binderDealWithLocateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case TERMINATE: {
-            // Process message body
-            break;
-        }
-        case EXECUTE: {
-            // Process message body
+            return binderDealWithTerminateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         default:
@@ -444,5 +326,155 @@ int binderDealWithData(int connectionNumber) {
     }
     free(messageBody);
     
+    return 0;
+}
+
+int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
+    // Message body: [ip,portnum,name,argTypes,]
+    char *ipv4Address = NULL;
+    int portNumber = 0;
+    char *name = NULL;
+    int *argTypes = NULL;
+    
+    int lastSeperatorIndex = -1;
+    int messageCount = 0;
+    
+    enum messageType responseType = REGISTER_SUCCESS;
+    // Process message body, initialize ip, port, name, argTypes
+    for (int i = 0; i < messageBodySize && responseType == REGISTER_SUCCESS; i++) {
+        if (messageBody[i] == ',') {
+            switch (messageCount) {
+                case 0: {
+                    uint32_t sizeOfIp = i - (lastSeperatorIndex + 1);
+                    if (sizeOfIp > 16) {
+                        // Size is too large
+                        responseType = REGISTER_FAILURE;
+                    }
+                    ipv4Address = (char*)malloc(sizeof(char) * sizeOfIp);
+                    memcpy(ipv4Address, messageBody + lastSeperatorIndex + 1, sizeOfIp);
+                    break;
+                }
+                case 1: {
+                    uint32_t sizeOfPort = i - (lastSeperatorIndex + 1);
+                    if (sizeOfPort != sizeof(portNumber)) {
+                        perror("port size error\n");
+                        responseType = REGISTER_FAILURE;
+                    }
+                    memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
+                    break;
+                }
+                case 2: {
+                    uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
+                    name = (char *)malloc(sizeof(char) * sizeOfName);
+                    memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
+                    break;
+                }
+                case 3: {
+                    uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
+                    argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                    memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                    break;
+                }
+                default:
+                    perror("Message Body Error\n");
+                    responseType = REGISTER_FAILURE;
+                    break;
+            }
+            lastSeperatorIndex = i;
+            messageCount++;
+        }
+    }
+    // Process completed
+    
+    printf("IP: %s\n", ipv4Address);
+    printf("Port: %d\n", portNumber);
+    printf("Name: %s\n", name);
+    printf("ArgTypes: ");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%ud ", argTypes[i]);
+    }
+    printf("\n");
+    
+    // If message is correct, register, else free
+    if (responseType == REGISTER_SUCCESS) {
+        // Store this procedure in binder's data store
+        std::pair<char *, int *> procedureKey(name, argTypes);
+        std::pair<char *, int> ID(ipv4Address, portNumber);
+        binderProcedureToID[procedureKey] = ID;
+    } else  {
+        free(ipv4Address);
+        free(name);
+        free(argTypes);
+    }
+    binderResponse(connectionSocket, responseType, 1);
+    if (responseType == REGISTER_SUCCESS) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
+    // Message body: [name,argTypes,]
+    char *name = NULL;
+    int *argTypes = NULL;
+    char *ipv4Address = NULL;
+    int portNumber = 0;
+    int lastSeperatorIndex = -1;
+    int messageCount = 0;
+    
+    enum messageType responseType = LOC_SUCCESS;
+    // Process message body, initialize ip, port, name, argTypes
+    for (int i = 0; i < messageBodySize && responseType == LOC_SUCCESS; i++) {
+        if (messageBody[i] == ',') {
+            switch (messageCount) {
+                case 0: {
+                    uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
+                    name = (char *)malloc(sizeof(char) * sizeOfName);
+                    memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
+                    break;
+                }
+                case 1: {
+                    uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
+                    argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                    memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                    break;
+                }
+                default:
+                    perror("Message Body Error\n");
+                    responseType = LOC_FAILURE;
+                    break;
+            }
+            lastSeperatorIndex = i;
+            messageCount++;
+        }
+    }
+    printf("Locate Name: %s\n", name);
+    printf("Locate ArgTypes: ");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%ud ", argTypes[i]);
+    }
+    printf("\n");
+    if (responseType == LOC_SUCCESS) {
+        std::pair<char *, int *> queryKey(name, argTypes);
+        std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
+        ipv4Address = queryResult.first;
+        portNumber = queryResult.second;
+        printf("Located IP: %s\n", ipv4Address);
+        printf("Located Port: %d\n", portNumber);
+    } else {
+        free(ipv4Address);
+        free(name);
+        free(argTypes);
+    }
+    binderResponse(connectionSocket, responseType, 1);
+    if (responseType == REGISTER_SUCCESS) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
     return 0;
 }
