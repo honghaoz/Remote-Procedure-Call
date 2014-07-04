@@ -350,6 +350,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                         // Size is too large
                         responseType = REGISTER_FAILURE;
                     }
+//                    printf("%d\n", sizeOfIp);
                     ipv4Address = (char*)malloc(sizeof(char) * sizeOfIp);
                     memcpy(ipv4Address, messageBody + lastSeperatorIndex + 1, sizeOfIp);
                     break;
@@ -460,6 +461,31 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
         ipv4Address = queryResult.first;
         portNumber = queryResult.second;
+        
+        // Prepare message body: [ip,portnum,]
+        uint32_t sizeOfIp = 16;
+        uint32_t sizeOfPort = sizeof(portNumber);
+        uint32_t totalSize = sizeOfIp + sizeOfPort + 2;
+        BYTE messageBody[totalSize];
+        char seperator = ',';
+        uint32_t sizeOfSeperator = sizeof(seperator);
+        int offset = 0;
+        memcpy(messageBody + offset, ipv4Address, sizeOfIp); // [ip]
+        offset += sizeOfIp;
+        memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,]
+        offset += sizeOfSeperator;
+        memcpy(messageBody + offset, &portNumber, sizeOfPort); // [ip,portnum]
+        offset += sizeOfPort;
+        memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,portnum,]
+        offset += sizeOfSeperator;
+        
+        // Send message body
+        ssize_t operationResult = -1;
+        operationResult = send(connectionSocket, &messageBody, totalSize, 0);
+        if (operationResult != totalSize) {
+            perror("Binder to server: Send ip+portnum failed\n");
+            return -1;
+        }
         printf("Located IP: %s\n", ipv4Address);
         printf("Located Port: %d\n", portNumber);
     } else {

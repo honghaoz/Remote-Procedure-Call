@@ -38,7 +38,7 @@ int serverToBinderSocket;
 
 // Server identifier and port number
 char ipv4Address[INET_ADDRSTRLEN];
-int portNumber;
+uint32_t portNumber;
 // Server registered procedures
 std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
 
@@ -203,7 +203,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     //2,  Send procedure to binder and register server procedure
     
     // Prepare message content
-    uint32_t sizeOfIp = (uint32_t)strlen(ipv4Address) + 1;
+    uint32_t sizeOfIp = 16;//(uint32_t)strlen(ipv4Address) + 1;
     uint32_t sizeOfPort = sizeof(portNumber);
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
     uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
