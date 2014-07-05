@@ -34,6 +34,8 @@ int binderHighestSocket; // Highest # of socket file descriptor
 
 std::map<std::pair<char *, int *>, std::pair<char *, int>> binderProcedureToID;
 
+
+#pragma mark - rpcBinderInit()
 /********************** rpcBinderInit() *************************
  *
  *  1, Create binder socket for server and client, and listen it
@@ -118,7 +120,7 @@ int rpcBinderInit() {
 
 
 
-
+#pragma mark - rpcBinderListen()
 /********************** rpcBinderListen() *************************
  *
  *  1, Handle message from server and client

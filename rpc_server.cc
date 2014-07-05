@@ -47,7 +47,7 @@ std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
 
 
 
-
+#pragma mark - rpcInit()
 /************************* rpcInit() *************************
  *
  *  1,  Set up server listen sockets for clients
@@ -180,7 +180,7 @@ int serverToBinderInit() {
 
 
 
-
+#pragma mark - rpcRegister()
 /******** rpcRegister(char* name, int* argTypes, skeleton f) **********
  *
  *  1,  Server add map entry: (name, argTypes) -> f
@@ -322,10 +322,12 @@ int serverHandleResponse(int connectionSocket) {
 
 
 
-
+#pragma mark - rpcExecute()
 /************************ rpcExecute() **************************
  *  
- *  1, Handle client calls
+ *  1, Handle client calls. Receive data from clients
+ *  2, Call skeleton
+ *  3, Send back the results
  *
  ****************************************************************/
 
@@ -421,19 +423,33 @@ int serverHandleNewConnection() {
 }
 
 // Server send back response
-int serverResponse(int connectionSocket, messageType responseType) {
+int serverResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
     // Send response message to server
     uint32_t responseType_network = htonl(responseType);
+    uint32_t responseErrorCode_network = htonl(errorCode);
     
+    // Send response type
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("Server sends response failed\n");
         return -1;
     }
+    
+    // Send response error code
+    operationResult = -1;
+    operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Binder sends response errorCode failed\n");
+        return -1;
+    }
+    
     return 0;
 }
 int serverDealWithData(int connectionNumber) {
+#warning thread?
+    // Dispatch a new thread to handle procedure execution
+    
     // Get the socket descriptor
     int connectionSocket = serverConnections[connectionNumber];
     
@@ -459,12 +475,12 @@ int serverDealWithData(int connectionNumber) {
     }
     else if (receivedSize != sizeof(uint32_t)) {
         perror("Server received wrong length of message length\n");
-        serverResponse(connectionSocket, LOC_FAILURE);
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
         return -1;
     }
     else { // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
-        serverResponse(connectionSocket, LOC_FAILURE);
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
         messageLength = ntohl(messageLength_network);
     }
     
@@ -473,16 +489,16 @@ int serverDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("Server received wrong length of message type\n");
-        serverResponse(connectionSocket, LOC_FAILURE);
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
         return -1;
     } else { // Receive message length correctly
         printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
     }
-    // If type is not LOC_REQUEST
-    if (messageType != LOC_REQUEST) {
+    // If type is not EXECUTE
+    if (messageType != EXECUTE) {
         perror("Server received wrong message type\n");
-        serverResponse(connectionSocket, LOC_FAILURE);
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
         return -1;
     }
     
@@ -506,9 +522,10 @@ int serverDealWithData(int connectionNumber) {
     int lastSeperatorIndex = -1;
     int messageCount = 0;
     
-    enum messageType responseType = LOC_SUCCESS;
+    enum messageType responseType = EXECUTE_SUCCESS;
+    
     // Process message body, initialize ip, port, name, argTypes
-    for (int i = 0; i < receivedSize && responseType == LOC_SUCCESS; i++) {
+    for (int i = 0; i < receivedSize && responseType == EXECUTE_SUCCESS; i++) {
         if (messageBody[i] == ',') {
             switch (messageCount) {
                 case 0: {
@@ -531,13 +548,20 @@ int serverDealWithData(int connectionNumber) {
                 }
                 default:
                     perror("Message Body Error\n");
-                    responseType = LOC_FAILURE;
+//                    responseType = EXECUTE_FAILURE;
+                    serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+                    free(name);
+                    free(argTypes);
+                    free(argsByte);
+                    free(args);
+                    return -1;
                     break;
             }
             lastSeperatorIndex = i;
             messageCount++;
         }
     }
+    
     printf("Execute Name: %s\n", name);
     printf("Execute ArgTypes: ");
     for (int i = 0; i < argTypesLength(argTypes); i++) {
@@ -596,32 +620,39 @@ int serverDealWithData(int connectionNumber) {
             }
             default:
                 perror("Arg type error \n");
+                serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+                free(name);
+                free(argTypes);
+                free(argsByte);
+                free(args);
+                return -1;
                 break;
         }
         argIndex++;
     }
     std::pair<char *, int *> queryKey(name, argTypes);
     skeleton f = serverProcedureToSkeleton[queryKey];
-    f(argTypes, args);
+    int executionResult = f(argTypes, args);
+    if (executionResult < 0) {
+        std::cerr << name <<" executes failed!\n";
+        // Send EXECUTE_FAILURE
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+        // Free allocated varilables
+        free(name);
+        free(argTypes);
+        free(argsByte);
+        free(args);
+        return -1;
+    }
+    // Send back execution result
     
-//    if (responseType == LOC_SUCCESS) {
-//        std::pair<char *, int *> queryKey(name, argTypes);
-//        std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
-//        ipv4Address = queryResult.first;
-//        portNumber = queryResult.second;
-//        printf("Located IP: %s\n", ipv4Address);
-//        printf("Located Port: %d\n", portNumber);
-//    } else {
-//        free(ipv4Address);
-//        free(name);
-//        free(argTypes);
-//    }
-//    binderResponse(connectionSocket, responseType);
-
-    
-    
-    // Dispatch a new thread to handle procedure execution
-    
+    // Send EXECUTE_SUCCESS
+    serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
+    // Free allocated varilables
+    free(name);
+    free(argTypes);
+    free(argsByte);
+    free(args);
     
     return 0;
 }
