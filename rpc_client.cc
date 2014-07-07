@@ -101,21 +101,14 @@ int ConnectToServer(char* hostname, char* portnumber){
 }
 
 int locationRequest(char* name, int* argTypes, int sockfd){
-    
-    unsigned int remained_size;
-    int sent_size;
-    
-    while(remained_size > 0){
-        //sent_size = send(sockfd, message, message.size()+1, 0);
-        if(sent_size == 0){
-            break;
-        }
-        else if(sent_size < 0){
-            return sent_size;
-        }
-        else{
-            remained_size -= sent_size;
-        }
+    //error checking?
+    if(name == NULL){
+        perror("null pointer of binder ip");
+        return -1;
+    }
+    if(argTypes == NULL){
+        perror("null pointer of argtype");
+        return -1;
     }
     // Prepare message content
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
@@ -173,6 +166,40 @@ int locationRequest(char* name, int* argTypes, int sockfd){
 }
 
 int executeRequest(char* name, int* argTypes, void** args, int sockfd){
+    if(name == NULL ){
+        perror("null pointer of binder ip");
+        return -1;
+    }
+    if(argTypes == NULL){
+        perror("null pointer of argTypes");
+        return -1;
+    }
+    if(args == NULL){
+        perror("null pointer of arguments");
+        return -1;
+    }
+    
+    // Prepare message content
+    uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
+    uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
+    uint32_t sizeOfargs;
+    uint32_t totalSize = sizeOfName + sizeOfArgTypes + 4;
+    
+    
+    BYTE messageBody[totalSize];
+    char seperator = ',';
+    int offset = 0;
+    memcpy(messageBody+offset, name, sizeOfName); // [ip,portnum,name]
+    offset += sizeOfName;
+    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,]
+    offset += 1;
+    memcpy(messageBody + offset, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    offset += sizeOfArgTypes;
+    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,argTypes,]
+    offset += 1;
+    
+    
+    
     
     return 0;
 }
@@ -196,6 +223,22 @@ int rpcCall(char* name, int* argTypes, void** args) {
     locationRequest(name, argTypes,binder_fd);
     
     //get the ip and port from binder
+    ssize_t receivedSize = -1;
+    uint32_t message_network = 0;
+    receivedSize = recv(binder_fd,&message_network , sizeof(uint32_t), 0);
+    // Connection lost
+    if (receivedSize == 0) {
+        perror("Connection between client and binder is lost\n");
+        close(binder_fd);
+        return -1;
+    }
+    else if (receivedSize != sizeof(uint32_t)) {
+        perror("Binder received wrong length of message length\n");
+        return -1;
+    }
+    else { // Receive message length correctly
+        printf("Received length of message length: %zd\n", receivedSize);
+    }
     
     char* server_host;
     char* server_port;
