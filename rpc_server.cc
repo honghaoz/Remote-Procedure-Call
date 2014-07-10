@@ -458,7 +458,7 @@ int serverDealWithData(int connectionNumber) {
     // Prepare for message length, message type
     uint32_t messageLength_network = 0;
     uint32_t messageType_network = 0;
-    uint32_t messageLength = 0;
+    uint32_t messageLength = 0; // Will also be used to send back
     uint32_t messageType = 0;
     
     // Receive message length
@@ -514,10 +514,10 @@ int serverDealWithData(int connectionNumber) {
     }
     printf("Received length of message body: %zd\n", receivedSize);
     
-    // Message body: [name,argTypes,args,]
+    // Message body: [name,argTypes,argsByte,]
     char *name = NULL;
     int *argTypes = NULL;
-    BYTE *argsByte = NULL;
+    BYTE *argsByte = NULL; //expanded args
     void ** args = NULL;
     int lastSeperatorIndex = -1;
     int messageCount = 0;
@@ -569,6 +569,7 @@ int serverDealWithData(int connectionNumber) {
     }
     printf("\n");
     
+#warning Fix me!
     // Process for args from argsByte
     args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     int offset = 0;
@@ -645,6 +646,79 @@ int serverDealWithData(int connectionNumber) {
         return -1;
     }
     // Send back execution result
+    // Message body: [name,argTypes,argsByte,]
+    uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
+    uint32_t sizeOfArgTypes = argTypesLength(argTypes);
+    uint32_t sizeOfArgsByte = argsSize(argTypes);
+    uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfArgsByte + 3;
+    // Send back size should equal to messagelength
+    if (messageLength != totalSize) {
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+        return -1;
+    }
+    // Prepare messageBody
+    
+    // Calculate size of argsByte
+//    offset = 0;
+//    argIndex = 0;
+//    for (int i = 0; i < sizeOfArgTypes - 1; i++) {
+//        uint32_t eachArgType = argTypes[i];
+//        switch (eachArgType & ARG_TYPE_MASK) {
+//            case ARG_CHAR: {
+//                
+//                char var;
+//                memcpy(&var, argsByte + offset, sizeof(var));
+//                args[argIndex] = (void *)&var;
+//                offset += sizeof(var);
+//                break;
+//            }
+//            case ARG_SHORT: {
+//                short var;
+//                memcpy(&var, argsByte + offset, sizeof(var));
+//                args[argIndex] = (void *)&var;
+//                offset += sizeof(var);
+//                break;
+//            }
+//            case ARG_INT: {
+//                int var;
+//                memcpy(&var, argsByte + offset, sizeof(var));
+//                args[argIndex] = (void *)&var;
+//                offset += sizeof(var);
+//                break;
+//            }
+//            case ARG_LONG: {
+//                long var;
+//                memcpy(&var, argsByte + offset, sizeof(var));
+//                args[argIndex] = (void *)&var;
+//                offset += sizeof(var);
+//                break;
+//            }
+//            case ARG_DOUBLE: {
+//                double var;
+//                memcpy(&var, argsByte + offset, sizeof(var));
+//                args[argIndex] = (void *)&var;
+//                offset += sizeof(var);
+//                break;
+//            }
+//            case ARG_FLOAT: {
+//                float var;
+//                memcpy(&var, argsByte + offset, sizeof(var));
+//                args[argIndex] = (void *)&var;
+//                offset += sizeof(var);
+//                break;
+//            }
+//            default:
+//                perror("Arg type error \n");
+//                serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+//                free(name);
+//                free(argTypes);
+//                free(argsByte);
+//                free(args);
+//                return -1;
+//                break;
+//        }
+//        argIndex++;
+//    }
     
     // Send EXECUTE_SUCCESS
     serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
