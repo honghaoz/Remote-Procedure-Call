@@ -432,15 +432,15 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         if (messageBody[i] == ',') {
             switch (messageCount) {
                 case 0: {
-                    uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
+                    uint32_t sizeOfName = i - (lastSeperatorIndex + 1);// get the size of function name
                     name = (char *)malloc(sizeof(char) * sizeOfName);
-                    memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);
+                    memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);// get the name of function
                     break;
                 }
                 case 1: {
-                    uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
+                    uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);// get the size of function arg type
                     argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
-                    memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                    memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);// get the arg Type
                     break;
                 }
                 default:
@@ -461,11 +461,12 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     if (responseType == LOC_SUCCESS) {
         std::pair<char *, int *> queryKey(name, argTypes);
         std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
+#warning if there is no such a queryKey, raise an exception
         ipv4Address = queryResult.first;
         portNumber = queryResult.second;
         
         // Prepare message body: [ip,portnum,]
-        uint32_t sizeOfIp = 16;
+        uint32_t sizeOfIp = 16; // the fixed length of IP address; define to be IP_SIZE later maybe
         uint32_t sizeOfPort = sizeof(portNumber);
         uint32_t totalSize = sizeOfIp + sizeOfPort + 2;
         BYTE messageBody[totalSize];

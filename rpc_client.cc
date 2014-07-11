@@ -199,6 +199,10 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     offset += 1;
     
     
+    uint32_t messageLength = totalSize;
+    uint32_t messageType = EXECUTE;
+    uint32_t messageLength_network = htonl(messageLength);
+    uint32_t messageType_network = htonl(messageType);
     
     
     return 0;
