@@ -24,7 +24,7 @@
  
  return: (integer) the socket fd or -1 as error occurs
  ********************************************************/
-int Connection(char* hostname, const char* portnumber){
+int Connection(const char* hostname, const char* portnumber){
     struct addrinfo host_info;
     struct addrinfo* host_info_list;
     int status;
@@ -61,12 +61,14 @@ int socketfd = -1;
 int ConnectToBinder(){
     if(socketfd < 0){
         //connect to binder
-        char* host = getenv("BINDER_ADDRESS");//get the server hostname from env
+        std::string name = "10.20.155.26";
+        const char* host = name.c_str();//getenv("BINDER_ADDRESS");//get the server hostname from env
         if(host == NULL){
             std::cerr<<"host is null"<<std::endl;
             exit(-1);
         }
-        char* portnum = getenv("BINDER_PORT");//get the server socket port from env
+        std::string p = "8888";
+        const char* portnum = p.c_str();//getenv("BINDER_PORT");//get the server socket port from env
         if(portnum == NULL){
             std::cerr<<"port number is NULL!"<<std::endl;
             exit(-1);
@@ -161,6 +163,12 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     }
     printf("Send message body succeed: %zd\n", operationResult);
     
+    printf("Name: %s\n", name);
+    printf("ArgTypes: ");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%ud ", argTypes[i]);
+    }
+    printf("\n");
 
     return 0;
 }

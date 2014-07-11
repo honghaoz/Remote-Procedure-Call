@@ -92,6 +92,19 @@ uint32_t argTypesLength(int *argTypes) {
     return i + 1;
 }
 
+bool argTypesEqual(int *argTypes1, int *argTypes2) {
+    int length1 = argTypesLength(argTypes1);
+    int length2 = argTypesLength(argTypes2);
+    if (length1 == length2) {
+        for (int i = 0; i < length1; i++) {
+            if (argTypes1[i] != argTypes2[i]) return false;
+        }
+    } else {
+        return false;
+    }
+    return true;
+}
+
 // Return size of type from an integer in argTypes
 uint32_t argSize(uint32_t argInteger) {
     switch ((argInteger & ARG_TYPE_MASK)) {

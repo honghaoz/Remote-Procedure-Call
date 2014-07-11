@@ -17,6 +17,7 @@
 #include <utility>
 #include <map>
 #include "rpc.h"
+#include "pmap.h"
 //using namespace std;
 
 /******************* Binder Functions ****************
@@ -32,8 +33,7 @@ int binderConnections[MAX_NUMBER_OF_CONNECTIONS]; // Array of connected connecti
 fd_set binderSocketsFD; // Socket file descriptors that we want to wake up for
 int binderHighestSocket; // Highest # of socket file descriptor
 
-std::map<std::pair<char *, int *>, std::pair<char *, int>> binderProcedureToID;
-
+pmap binderProcedureToID;
 
 #pragma mark - rpcBinderInit()
 /********************** rpcBinderInit() *************************
@@ -401,9 +401,9 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     // If message is correct, register, else free
     if (responseType == REGISTER_SUCCESS) {
         // Store this procedure in binder's data store
-        std::pair<char *, int *> procedureKey(name, argTypes);
-        std::pair<char *, int> ID(ipv4Address, portNumber);
-        binderProcedureToID[procedureKey] = ID;
+        P_NAME_TYPES procedureKey(name, argTypes);
+        P_IP_PORT ID(ipv4Address, portNumber);
+        binderProcedureToID.insert(procedureKey, ID);
     } else  {
         free(ipv4Address);
         free(name);
@@ -459,11 +459,16 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     }
     printf("\n");
     if (responseType == LOC_SUCCESS) {
-        std::pair<char *, int *> queryKey(name, argTypes);
-        std::pair<char *, int> queryResult = binderProcedureToID[queryKey];
-#warning if there is no such a queryKey, raise an exception
-        ipv4Address = queryResult.first;
-        portNumber = queryResult.second;
+        P_NAME_TYPES queryKey(name, argTypes);
+        P_IP_PORT *queryResult = binderProcedureToID.find(queryKey);
+        if (queryResult == NULL) {
+            perror("Procedure Not found");
+            goto Response;
+        }
+        ipv4Address = queryResult->first;
+        portNumber = queryResult->second;
+        
+        printf("Found IP: %s Port: %d\n", ipv4Address, portNumber);
         
         // Prepare message body: [ip,portnum,]
         uint32_t sizeOfIp = 16; // the fixed length of IP address; define to be IP_SIZE later maybe
@@ -496,6 +501,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         free(name);
         free(argTypes);
     }
+Response:
     binderResponse(connectionSocket, responseType, 1);
     if (responseType == REGISTER_SUCCESS) {
         return 0;
