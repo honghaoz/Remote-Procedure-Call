@@ -261,8 +261,8 @@ int rpcCall(char* name, int* argTypes, void** args) {
         return -1;
     }
     
+    executeRequest(name, argTypes, args, server_sockfd);
     
-    //sending message
     return 0;
 }
 int rpcCacheCall(char* name, int* argTypes, void** args) {
