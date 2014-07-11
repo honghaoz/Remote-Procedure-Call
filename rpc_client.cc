@@ -24,7 +24,7 @@
  
  return: (integer) the socket fd or -1 as error occurs
  ********************************************************/
-int Connection(char* hostname, char* portnumber){
+int Connection(char* hostname, const char* portnumber){
     struct addrinfo host_info;
     struct addrinfo* host_info_list;
     int status;
@@ -208,6 +208,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     return 0;
 }
 
+
 /******************* Client Functions ****************
  *
  *  Description: Client related functions
@@ -228,8 +229,10 @@ int rpcCall(char* name, int* argTypes, void** args) {
     
     //get the ip and port from binder
     ssize_t receivedSize = -1;
-    uint32_t message_network = 0;
-    receivedSize = recv(binder_fd,&message_network , sizeof(uint32_t), 0);
+    char seperator = ',';
+    uint32_t messageLength = 16+sizeof(seperator)+sizeof(int)+sizeof(seperator);//the total size of message from binder
+    BYTE* message_body = (BYTE *)malloc(sizeof(BYTE) * messageLength);
+    receivedSize = recv(binder_fd,message_body , sizeof(uint32_t), 0);
     // Connection lost
     if (receivedSize == 0) {
         perror("Connection between client and binder is lost\n");
@@ -243,11 +246,15 @@ int rpcCall(char* name, int* argTypes, void** args) {
     else { // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
     }
-    
-    char* server_host;
-    char* server_port;
+    char* server_host = (char*)malloc(sizeof(sizeof(char) * 16));
+    memcpy(server_host,message_body,16);
+    int portnum;
+    memcpy(&portnum, message_body+17, sizeof(int));
+    std::string s = std::to_string(portnum);
+    const char* server_port = s.c_str();
+
     int server_sockfd;
-    
+    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = Connection(server_host, server_port);
     if(server_fd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
