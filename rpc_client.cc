@@ -61,7 +61,8 @@ int socketfd = -1;
 int ConnectToBinder(){
     if(socketfd < 0){
         //connect to binder
-        std::string name = "10.20.155.26";
+#warning Need to change to dynamic address
+        std::string name = "127.0.0.1";
         const char* host = name.c_str();//getenv("BINDER_ADDRESS");//get the server hostname from env
         if(host == NULL){
             std::cerr<<"host is null"<<std::endl;
@@ -115,20 +116,21 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     // Prepare message content
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
     uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
-    uint32_t totalSize = sizeOfName + sizeOfArgTypes + 4;
+    char seperator = ',';
+    uint32_t sizeOfSeperator = sizeof(seperator);
+    uint32_t totalSize = sizeOfName + sizeOfArgTypes + 2 * sizeOfSeperator;
     //    printf("%d + 1 + %d + 1 + %d + 1 + %d + 1 = %d\n", sizeOfIp, sizeOfPort, sizeOfName, sizeOfArgTypes, totalSize);
     
 
     BYTE messageBody[totalSize];
-    char seperator = ',';
     int offset = 0;
     memcpy(messageBody+offset, name, sizeOfName); // [ip,portnum,name]
     offset += sizeOfName;
-    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,]
-    offset += 1;
+    memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,portnum,name,]
+    offset += sizeOfSeperator;
     memcpy(messageBody + offset, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
     offset += sizeOfArgTypes;
-    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,argTypes,]
+    memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,portnum,name,argTypes,]
     
     // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
     uint32_t messageLength = totalSize;
@@ -238,20 +240,23 @@ int rpcCall(char* name, int* argTypes, void** args) {
     //get the ip and port from binder
     ssize_t receivedSize = -1;
     char seperator = ',';
-    uint32_t messageLength = 16+sizeof(seperator)+sizeof(int)+sizeof(seperator);//the total size of message from binder
+    uint32_t sizeOfSeperator = sizeof(seperator);
+    uint32_t messageLength = 16 + sizeof(int) + 2 * sizeOfSeperator;//the total size of message from binder
     BYTE* message_body = (BYTE *)malloc(sizeof(BYTE) * messageLength);
-    receivedSize = recv(binder_fd,message_body , sizeof(uint32_t), 0);
+    receivedSize = recv(binder_fd,message_body , messageLength, 0);
     // Connection lost
     if (receivedSize == 0) {
         perror("Connection between client and binder is lost\n");
         close(binder_fd);
         return -1;
     }
-    else if (receivedSize != sizeof(uint32_t)) {
+    else if (receivedSize != messageLength) {
         perror("Binder received wrong length of message length\n");
         return -1;
     }
-    else { // Receive message length correctly
+    else {
+        // Received message length should be 16 + sizeof(portNumber) + 2
+        // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
     }
     char* server_host = (char*)malloc(sizeof(sizeof(char) * 16));

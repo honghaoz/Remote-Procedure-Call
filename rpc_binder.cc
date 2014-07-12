@@ -473,10 +473,10 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         // Prepare message body: [ip,portnum,]
         uint32_t sizeOfIp = 16; // the fixed length of IP address; define to be IP_SIZE later maybe
         uint32_t sizeOfPort = sizeof(portNumber);
-        uint32_t totalSize = sizeOfIp + sizeOfPort + 2;
-        BYTE messageBody[totalSize];
         char seperator = ',';
         uint32_t sizeOfSeperator = sizeof(seperator);
+        uint32_t totalSize = sizeOfIp + sizeOfPort + 2 * sizeOfSeperator;
+        BYTE messageBody[totalSize];
         int offset = 0;
         memcpy(messageBody + offset, ipv4Address, sizeOfIp); // [ip]
         offset += sizeOfIp;
