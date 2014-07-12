@@ -7,7 +7,7 @@
 //
 
 #include "pmap.h"
-#include "rpc_helper.cc"
+#include "rpc.h"
 #include <string>
 using namespace std;
 
