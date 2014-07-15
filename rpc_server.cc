@@ -16,6 +16,7 @@
 #include <math.h>
 #include <utility>
 #include <map>
+#include <assert.h>
 #include "rpc.h"
 //using namespace std;
 
@@ -542,6 +543,7 @@ int serverDealWithData(int connectionNumber) {
                 }
                 case 2: {
                     uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
+                    assert(sizeOfArgsByte == argsSize(argTypes));
                     argsByte = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                     memcpy(argsByte, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
                     break;
@@ -565,7 +567,12 @@ int serverDealWithData(int connectionNumber) {
     printf("Execute Name: %s\n", name);
     printf("Execute ArgTypes: ");
     for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%ud ", argTypes[i]);
+        printf("%s\n", u32ToBit(argTypes[i]));
+    }
+    printf("\n");
+    printf("Execute ArgsByte: ");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%s\n", u32ToBit(argTypes[i]));
     }
     printf("\n");
     
@@ -575,7 +582,7 @@ int serverDealWithData(int connectionNumber) {
     int argIndex = 0;
     for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
         uint32_t eachArgType = argTypes[i];
-        switch (eachArgType & ARG_TYPE_MASK) {
+        switch (eachArgType & ARG_TYPE_MASK >> 16) {
             case ARG_CHAR: {
                 // Get array length
                 int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
