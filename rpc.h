@@ -65,8 +65,8 @@ uint32_t argTypesLength(int *argTypes);
 uint32_t argSize(uint32_t argInteger);
 uint32_t argsSize(int *argTypes);
 bool argTypesEqual(int *argTypes1, int *argTypes2);
-
-bool argsByteToArgs(int *argTypes, BYTE *argsByte, void ** &args);
+bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args);
+void printOutArgs(int * &argTypes, void ** &args);
     
 // Server side:
 extern int rpcInit();

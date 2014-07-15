@@ -585,7 +585,11 @@ int serverDealWithData(int connectionNumber) {
         return -1;
     }
     
+    printOutArgs(argTypes, args);
+    
     P_NAME_TYPES queryKey(name, argTypes);
+    
+    // Execute
     skeleton f = serverProcedureToSkeleton.findSkeleton(queryKey);
     if (f == NULL) {
         printf("591: %s skeleton is null\n", name);
@@ -603,6 +607,7 @@ int serverDealWithData(int connectionNumber) {
         free(args);
         return -1;
     }
+    
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
