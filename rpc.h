@@ -44,11 +44,11 @@ typedef int (*skeleton)(int *, void **);
   
 #define INIT_ARGS_I_WITH_TYPE(VAR) \
     if (ArrayLenght == 0) { \
-        VAR var; \
-        memcpy(&var, argsByte + offset, sizeof(var)); \
+        VAR* var = (VAR*)malloc(sizeof(VAR)); \
+        memcpy(var, argsByte + offset, sizeof(VAR)); \
         printf("argIndex: %d offset: %d\n", argIndex, offset); \
-        args[argIndex] = (void *)&var; \
-        offset += sizeof(var); \
+        args[argIndex] = (void *)var; \
+        offset += sizeof(VAR); \
     } else if (ArrayLenght > 0) { \
         uint32_t varsSize = sizeof(VAR) * ArrayLenght; \
         VAR *vars = (VAR *)malloc(varsSize); \

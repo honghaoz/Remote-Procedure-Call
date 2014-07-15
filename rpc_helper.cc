@@ -174,14 +174,12 @@ bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args) {
                 int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
 //                printf("length: %d\n", ArrayLenght);
                 INIT_ARGS_I_WITH_TYPE(int)
-//                args[argIndex] = (void *)&var;
                 break;
             }
             case ARG_LONG: {
                 // Get array length
                 int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
                 INIT_ARGS_I_WITH_TYPE(long)
-                break;
             }
             case ARG_DOUBLE: {
                 // Get array length

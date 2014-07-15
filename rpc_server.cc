@@ -574,6 +574,7 @@ int serverDealWithData(int connectionNumber) {
     
     printOutArgsByte(argTypes, argsByte);
     
+    
     // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
     // BYTE *argsByte)
     if (argsByteToArgs(argTypes, argsByte, args)) {
