@@ -206,7 +206,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     offset += sizeOfName;
     memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,]
     offset += 1;
-    memcpy(messageBody + offset, argTypes, sizeOfArgTypes); // [ip,portnum,name,argTypes]
+    memcpy(messageBody + offset, argTypes, sizeOfArgTypes); //
     offset += sizeOfArgTypes;
     memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,argTypes,]
     offset += 1;
@@ -217,8 +217,11 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
             lengthOfArray = 1;
         }
         memcpy(messageBody + offset, args[i], lengthOfArray * argSize(argTypes[i]));
+        
         offset += lengthOfArray * argSize(argTypes[i]);
     }
+    
+    
     
     
     uint32_t messageLength = totalSize;
@@ -256,7 +259,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     printf("Name: %s\n", name);
     printf("ArgTypes: ");
     for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%ud ", argTypes[i]);
+        printf("%s\n", u32ToBit(argTypes[i]));
     }
     printf("\n");
     
