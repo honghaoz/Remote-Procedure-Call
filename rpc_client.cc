@@ -87,6 +87,48 @@ int ConnectToBinder(){
     }
 }
 
+
+//**********************************
+// clientHandleResponse
+//
+//**********************************
+int clientHandleResponse(int connectionSocket) {
+    uint32_t responseType_network = 0;
+    uint32_t responseType = 0;
+    uint32_t responseErrorCode_network = 0;
+    uint32_t responseErrorCode = 0;
+    
+    // Receive response type
+    ssize_t receivedSize = -1;
+    receivedSize = recv(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Client receive binder response type failed\n");
+        return -1;
+    }
+    receivedSize = -1;
+    
+    // Receive response error code
+    receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Client receive binder response errorCode failed\n");
+        return -1;
+    }
+    
+    responseType = ntohl(responseType_network);
+    responseErrorCode = ntohl(responseErrorCode_network);
+    
+    if (responseType == EXECUTE_FAILURE) {
+        //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
+        std::cerr << "Server response: REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;
+        return responseErrorCode;
+    } else if (responseType == EXECUTE_SUCCESS) {
+        printf("Server response: REGISTER_SUCCESS\n");
+        return 0;
+    } else {
+        return 0;
+    }
+}
+
 /***************** connect to server *************************
  Purpose: 
  
@@ -176,6 +218,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
 }
 
 
+
 int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     if(name == NULL ){
         perror("null pointer of binder ip");
@@ -263,6 +306,97 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     printf("\n");
     
     printOutArgs(argTypes, args);
+    
+    
+    int response = 0;
+    response = clientHandleResponse(sockfd);
+    if(response == 0){
+        //success
+        // Allocate messageBody
+        BYTE *messageBody = (BYTE *)malloc(sizeof(BYTE) * messageLength);
+        
+        // Receive message body
+        int receivedSize = -1;
+        receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
+        if (receivedSize != messageLength) {
+            perror("Client received wrong length of message body\n");
+            return -1;
+        }
+        printf("Received length of message body: %zd\n", receivedSize);
+        
+        // Message body: [name,argTypes,argsByte,]
+        char *name_received = NULL;
+        int *argTypes_received = NULL;
+        BYTE *argsByte_received = NULL; //expanded args
+        void ** args_received = NULL;
+        int lastSeperatorIndex = -1;
+        int messageCount = 0;
+        
+        // Process message body, initialize ip, port, name, argTypes
+        for (int i = 0; i < receivedSize; i++) {
+            if (messageBody[i] == ',') {
+                switch (messageCount) {
+                    case 0: {
+                        uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
+                        name = (char *)malloc(sizeof(char) * sizeOfName);
+                        memcpy(name_received, messageBody + lastSeperatorIndex + 1, sizeOfName);
+                        break;
+                    }
+                    case 1: {
+                        uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
+                        argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                        memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                        break;
+                    }
+                    case 2: {
+                        uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
+                        assert(sizeOfArgsByte == argsSize(argTypes_received));
+                        argsByte_received = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
+                        memcpy(argsByte_received, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
+                        break;
+                    }
+                    default:
+                        perror("Message Body Error\n");
+                        free(name_received);
+                        free(argTypes_received);
+                        free(argsByte_received);
+                        free(args_received);
+                        return -1;
+                        break;
+                }
+                lastSeperatorIndex = i;
+                messageCount++;
+            }
+        }
+        
+        printf("Execute Name: %s\n", name);
+        printf("Execute ArgTypes: ");
+        for (int i = 0; i < argTypesLength(argTypes); i++) {
+            printf("%s\n", u32ToBit(argTypes[i]));
+        }
+        printf("\n");
+        
+        printOutArgsByte(argTypes, argsByte);
+        
+        
+        // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
+        // BYTE *argsByte)
+        if (argsByteToArgs(argTypes, argsByte, args)) {
+            printf("args init succeed!\n");
+        } else {
+            serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+            free(name);
+            free(argTypes);
+            free(argsByte);
+            free(args);
+            return -1;
+        }
+        printOutArgs(argTypes, args);
+
+    }
+    else{
+        printf("reasonCode: %d\n",response);
+    }
     
     return 0;
 }
