@@ -116,7 +116,7 @@ int clientHandleResponse(int connectionSocket) {
     
     responseType = ntohl(responseType_network);
     responseErrorCode = ntohl(responseErrorCode_network);
-    
+    printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
     if (responseType == EXECUTE_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
         std::cerr << "Server response: REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;

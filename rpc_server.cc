@@ -427,6 +427,7 @@ int serverHandleNewConnection() {
 // Server send back response
 int serverResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
     // Send response message to server
+    printf("type: %d, errorCode: %d\n", responseType, errorCode);
     uint32_t responseType_network = htonl(responseType);
     uint32_t responseErrorCode_network = htonl(errorCode);
     
@@ -437,14 +438,16 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
         perror("Server sends response failed\n");
         return -1;
     }
+    printf("Server send response: %d succeed\n", responseType_network);
     
     // Send response error code
     operationResult = -1;
     operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Binder sends response errorCode failed\n");
+        perror("Server sends response errorCode failed\n");
         return -1;
     }
+    printf("Server send response errorCode: %d succeed\n", errorCode);
     
     return 0;
 }
@@ -482,7 +485,7 @@ int serverDealWithData(int connectionNumber) {
     }
     else { // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
-        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+//        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
         messageLength = ntohl(messageLength_network);
     }
     
@@ -610,7 +613,7 @@ int serverDealWithData(int connectionNumber) {
         free(args);
         return -1;
     }
-    
+    printf("EXE succeed\n");
     // Send EXECUTE_SUCCESS
     serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
     
