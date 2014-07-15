@@ -606,7 +606,7 @@ int serverDealWithData(int connectionNumber) {
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
-    uint32_t sizeOfArgTypes = argTypesLength(argTypes);
+    uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
     uint32_t sizeOfArgsByte = argsSize(argTypes);
     uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfArgsByte + 3;
     // Send back size should equal to messagelength
@@ -615,68 +615,41 @@ int serverDealWithData(int connectionNumber) {
         return -1;
     }
     // Prepare messageBody
+    BYTE messageBodyResponse[totalSize];
+    char seperator = ',';
+    int offset = 0;
+    memcpy(messageBodyResponse + offset, name, sizeOfName); // [name]
+    offset += sizeOfName;
+    memcpy(messageBodyResponse + offset, &seperator, sizeof(seperator));//[name,]
+    offset += sizeof(seperator);
+    memcpy(messageBodyResponse + offset, argTypes, sizeOfArgTypes);// [name, argTypes]
+    offset += sizeOfArgTypes;
+    memcpy(messageBodyResponse + offset, &seperator, sizeof(seperator));// [name, argTypes,]
+    offset += sizeof(seperator);
+    for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
+        int lengthOfArray = argTypes[i] & ARG_ARRAY_LENGTH_MASK;
+        // If length is 0, scalar
+        if (lengthOfArray == 0) {
+            lengthOfArray = 1;
+        }
+        uint32_t copySize = lengthOfArray * argSize(argTypes[i]);
+        memcpy(messageBody + offset, args[i], copySize);
+        offset += copySize;
+    }
+    memcpy(messageBodyResponse + offset, &seperator, sizeof(seperator));
     
-    // Calculate size of argsByte
-//    offset = 0;
-//    argIndex = 0;
-//    for (int i = 0; i < sizeOfArgTypes - 1; i++) {
-//        uint32_t eachArgType = argTypes[i];
-//        switch (eachArgType & ARG_TYPE_MASK) {
-//            case ARG_CHAR: {
-//                
-//                char var;
-//                memcpy(&var, argsByte + offset, sizeof(var));
-//                args[argIndex] = (void *)&var;
-//                offset += sizeof(var);
-//                break;
-//            }
-//            case ARG_SHORT: {
-//                short var;
-//                memcpy(&var, argsByte + offset, sizeof(var));
-//                args[argIndex] = (void *)&var;
-//                offset += sizeof(var);
-//                break;
-//            }
-//            case ARG_INT: {
-//                int var;
-//                memcpy(&var, argsByte + offset, sizeof(var));
-//                args[argIndex] = (void *)&var;
-//                offset += sizeof(var);
-//                break;
-//            }
-//            case ARG_LONG: {
-//                long var;
-//                memcpy(&var, argsByte + offset, sizeof(var));
-//                args[argIndex] = (void *)&var;
-//                offset += sizeof(var);
-//                break;
-//            }
-//            case ARG_DOUBLE: {
-//                double var;
-//                memcpy(&var, argsByte + offset, sizeof(var));
-//                args[argIndex] = (void *)&var;
-//                offset += sizeof(var);
-//                break;
-//            }
-//            case ARG_FLOAT: {
-//                float var;
-//                memcpy(&var, argsByte + offset, sizeof(var));
-//                args[argIndex] = (void *)&var;
-//                offset += sizeof(var);
-//                break;
-//            }
-//            default:
-//                perror("Arg type error \n");
-//                serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-//                free(name);
-//                free(argTypes);
-//                free(argsByte);
-//                free(args);
-//                return -1;
-//                break;
-//        }
-//        argIndex++;
-//    }
+    // Send execution result
+    ssize_t operationResult = -1;
+    operationResult = send(connectionSocket, &messageBodyResponse, totalSize, 0);
+    if (operationResult != totalSize) {
+        perror("Server to client: Send [name, argTypes, argsByte,] failed\n");
+        serverResponse(connectionSocket, EXECUTE_FAILURE, 0);
+        free(name);
+        free(argTypes);
+        free(argsByte);
+        free(args);
+        return -1;
+    }
     
     // Send EXECUTE_SUCCESS
     serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
