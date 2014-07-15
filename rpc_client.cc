@@ -261,6 +261,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         printf("%s\n", u32ToBit(argTypes[i]));
     }
     printf("\n");
+    
     printOutArgs(argTypes, args);
     
     return 0;

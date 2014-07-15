@@ -34,8 +34,10 @@ int main() {
   args0[0] = (void *)&return0;
   args0[1] = (void *)&a0;
   args0[2] = (void *)&b0;
-    
-//    printOutArgs(argTypes0, args0);
+//    
+//    int *argTypes = argTypes0;
+//    void ** args = args0;
+//    printOutArgs(argTypes, args);
 
   /* prepare the arguments for f1 */
   char a1 = 'a';

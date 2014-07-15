@@ -257,11 +257,11 @@ void printOutArgs(int * &argTypes, void ** &args) {
                 // Get array length
                 int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
                 if (ArrayLenght == 0) {
-                    short var = *(short *)args[i];
-                    printf(" args[%d] (int) = %c\n", i, var);
+                    int var = *(int *)args[i];
+                    printf(" args[%d] (int) = %d\n", i, var);
                 } else if(ArrayLenght > 0) {
-                    uint32_t varsSize = sizeof(short) * ArrayLenght;
-                    short *vars = (short *)malloc(varsSize);
+                    uint32_t varsSize = sizeof(int) * ArrayLenght;
+                    int *vars = (int *)malloc(varsSize);
                     memcpy(vars, args[i], varsSize);
                     printf(" args[%d] (int) = [", i);
                     for (int varIndex = 0; varIndex < ArrayLenght; varIndex++) {
