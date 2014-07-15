@@ -57,22 +57,22 @@ std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
 int serverForClientsInit();
 int serverToBinderInit();
 
-int rpcInit() {
+int rpcInit()
+{
     std::cout << "rpcInit()" << std::endl;
-    
     // 1, Set up server listen sockets for clients
     int status = serverForClientsInit();
     if (status < 0) {
         return -1;
     }
-    
+
     // 2, Create socket connection with Binder
     status = -1;
     status = serverToBinderInit();
     if (status < 0) {
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -569,8 +569,7 @@ int serverDealWithData(int connectionNumber) {
     }
     printf("\n");
     
-#warning Fix me!
-    // Process for args from argsByte
+    // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL, 
     args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     int offset = 0;
     int argIndex = 0;
@@ -578,45 +577,39 @@ int serverDealWithData(int connectionNumber) {
         uint32_t eachArgType = argTypes[i];
         switch (eachArgType & ARG_TYPE_MASK) {
             case ARG_CHAR: {
-                char var;
-                memcpy(&var, argsByte + offset, sizeof(var));
-                args[argIndex] = (void *)&var;
-                offset += sizeof(var);
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(char)
                 break;
             }
             case ARG_SHORT: {
-                short var;
-                memcpy(&var, argsByte + offset, sizeof(var));
-                args[argIndex] = (void *)&var;
-                offset += sizeof(var);
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(short)
                 break;
             }
             case ARG_INT: {
-                int var;
-                memcpy(&var, argsByte + offset, sizeof(var));
-                args[argIndex] = (void *)&var;
-                offset += sizeof(var);
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(int)
                 break;
             }
             case ARG_LONG: {
-                long var;
-                memcpy(&var, argsByte + offset, sizeof(var));
-                args[argIndex] = (void *)&var;
-                offset += sizeof(var);
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(long)
                 break;
             }
             case ARG_DOUBLE: {
-                double var;
-                memcpy(&var, argsByte + offset, sizeof(var));
-                args[argIndex] = (void *)&var;
-                offset += sizeof(var);
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(double)
                 break;
             }
             case ARG_FLOAT: {
-                float var;
-                memcpy(&var, argsByte + offset, sizeof(var));
-                args[argIndex] = (void *)&var;
-                offset += sizeof(var);
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(float)
                 break;
             }
             default:

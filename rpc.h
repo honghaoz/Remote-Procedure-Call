@@ -41,6 +41,22 @@ enum messageType{
 typedef int (*skeleton)(int *, void **);
 
 #include <stdint.h>
+  
+#define INIT_ARGS_I_WITH_TYPE(VAR) \
+    if (ArrayLenght == 0) { \
+        VAR var; \
+        memcpy(&var, argsByte + offset, sizeof(var)); \
+        args[argIndex] = (void *)&var; \
+        offset += sizeof(var); \
+    } else if (ArrayLenght > 0) { \
+        uint32_t varsSize = sizeof(VAR) * ArrayLenght; \
+        VAR *vars = (VAR *)malloc(varsSize); \
+        memcpy(vars, argsByte + offset, varsSize); \
+        args[argIndex] = (void *)vars; \
+        offset += varsSize; \
+    } else { \
+        perror("ARG_LENGTH error\n"); \
+    }
 
 // Helper functions:
 const char *u32ToBit(uint32_t x);
