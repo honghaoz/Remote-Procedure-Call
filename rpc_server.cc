@@ -310,7 +310,7 @@ int serverHandleResponse(int connectionSocket) {
     if (responseType == REGISTER_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
         std::cerr << "Binder response: REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;
-        return -1;
+        return responseErrorCode;
     } else if (responseType == REGISTER_SUCCESS) {
         printf("Binder response: REGISTER_SUCCESS\n");
         return 0;
@@ -611,6 +611,9 @@ int serverDealWithData(int connectionNumber) {
         return -1;
     }
     
+    // Send EXECUTE_SUCCESS
+    serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
+    
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
@@ -659,8 +662,6 @@ int serverDealWithData(int connectionNumber) {
         return -1;
     }
     
-    // Send EXECUTE_SUCCESS
-    serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
     // Free allocated varilables
     free(name);
     free(argTypes);
