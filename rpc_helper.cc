@@ -149,7 +149,7 @@ uint32_t argsSize(int *argTypes) {
     return result;
 }
 
-bool argsByteToArgs(int *argTypes, BYTE *argsByte, void **args) {
+bool argsByteToArgs(int *argTypes, BYTE *argsByte, void ** &args) {
     args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     int offset = 0;
     int argIndex = 0;
@@ -172,7 +172,9 @@ bool argsByteToArgs(int *argTypes, BYTE *argsByte, void **args) {
             case ARG_INT: {
                 // Get array length
                 int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+//                printf("length: %d\n", ArrayLenght);
                 INIT_ARGS_I_WITH_TYPE(int)
+//                args[argIndex] = (void *)&var;
                 break;
             }
             case ARG_LONG: {
