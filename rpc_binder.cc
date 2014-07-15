@@ -460,7 +460,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     printf("\n");
     if (responseType == LOC_SUCCESS) {
         P_NAME_TYPES queryKey(name, argTypes);
-        P_IP_PORT *queryResult = binderProcedureToID.find(queryKey);
+        P_IP_PORT *queryResult = binderProcedureToID.findIp(queryKey);
         if (queryResult == NULL) {
             perror("Procedure Not found");
             goto Response;

@@ -18,6 +18,7 @@
 #include <map>
 #include <assert.h>
 #include "rpc.h"
+#include "pmap.h"
 //using namespace std;
 
 /******************* Server  ************************
@@ -41,8 +42,8 @@ int serverToBinderSocket;
 char ipv4Address[INET_ADDRSTRLEN];
 uint32_t portNumber;
 // Server registered procedures
-std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
-
+//std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
+pmap serverProcedureToSkeleton;
 
 
 
@@ -198,8 +199,8 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     std::cout << "rpcRegister(" << name << ")" << std::endl;
     
     //1,  Server add map entry: (name, argTypes) -> f
-    std::pair<char *, int *> theProcedureSignature (name, argTypes);
-    serverProcedureToSkeleton[theProcedureSignature] = f;
+    P_NAME_TYPES theProcedureSignature (name, argTypes);
+    serverProcedureToSkeleton.insert(theProcedureSignature, f);
     
     //2,  Send procedure to binder and register server procedure
     
@@ -584,8 +585,12 @@ int serverDealWithData(int connectionNumber) {
         return -1;
     }
     
-    std::pair<char *, int *> queryKey(name, argTypes);
-    skeleton f = serverProcedureToSkeleton[queryKey];
+    P_NAME_TYPES queryKey(name, argTypes);
+    skeleton f = serverProcedureToSkeleton.findSkeleton(queryKey);
+    if (f == NULL) {
+        printf("591: %s skeleton is null\n", name);
+    }
+    
     int executionResult = f(argTypes, args);
     if (executionResult < 0) {
         std::cerr << name <<" executes failed!\n";

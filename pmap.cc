@@ -15,10 +15,10 @@ pmap::pmap(){
     // Do nothing
 }
 
-pmap::pmap(P_NAME_TYPES key, P_IP_PORT value) {
-    P_MAP newKV = P_MAP(key, value);
-    theMap.push_back(newKV);
-}
+//pmap::pmap(P_NAME_TYPES key, P_IP_PORT value) {
+//    P_MAP_IP_PORT newKV = P_MAP_IP_PORT(key, value);
+//    theMap.push_back(newKV);
+//}
 
 bool isPairEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     string k1Name(k1.first);
@@ -33,8 +33,8 @@ bool isPairEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     }
 }
 
-P_IP_PORT* pmap::find(P_NAME_TYPES key) {
-    for (std::vector<P_MAP>::iterator it = theMap.begin(); it != theMap.end(); it++) {
+P_IP_PORT* pmap::findIp(P_NAME_TYPES key) {
+    for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
         if (isPairEqual(key, existedKey)) {
             return &it->second;
@@ -43,25 +43,58 @@ P_IP_PORT* pmap::find(P_NAME_TYPES key) {
     return NULL;
 }
 
+skeleton pmap::findSkeleton(P_NAME_TYPES key) {
+    for (std::vector<P_MAP_SKELETON>::iterator it = vecSkeleton.begin(); it != vecSkeleton.end(); it++) {
+        P_NAME_TYPES existedKey = it->first;
+        if (isPairEqual(key, existedKey)) {
+            return it->second;
+        }
+    }
+    return NULL;
+}
+
 // Insert new KV, return 0: inserted, return 1: replaced.
 int pmap::insert(P_NAME_TYPES key, P_IP_PORT value) {
-    std::vector<P_MAP>::iterator KVFound = theMap.end();
-    for (std::vector<P_MAP>::iterator it = theMap.begin(); it != theMap.end(); it++) {
+    std::vector<P_MAP_IP_PORT>::iterator KVFound = vecIp.end();
+    for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
         if (isPairEqual(key, existedKey)) {
             KVFound = it;
         }
     }
-    P_MAP newKV = P_MAP(key, value);
+    P_MAP_IP_PORT newKV = P_MAP_IP_PORT(key, value);
     // Not Found
-    if (KVFound == theMap.end()) {
-        theMap.push_back(newKV);
+    if (KVFound == vecIp.end()) {
+        vecIp.push_back(newKV);
         return 0;
     }
     // Found
     else {
-        theMap.erase(KVFound);
-        theMap.push_back(newKV);
+        vecIp.erase(KVFound);
+        vecIp.push_back(newKV);
+        return 1;
+    }
+}
+
+// Insert new KV, return 0: inserted, return 1: replaced.
+int pmap::insert(P_NAME_TYPES key, skeleton value) {
+    std::vector<P_MAP_SKELETON>::iterator KVFound = vecSkeleton.end();
+    for (std::vector<P_MAP_SKELETON>::iterator it = vecSkeleton.begin(); it != vecSkeleton.end(); it++) {
+        P_NAME_TYPES existedKey = it->first;
+        if (isPairEqual(key, existedKey)) {
+            KVFound = it;
+        }
+    }
+    P_MAP_SKELETON newKV = P_MAP_SKELETON(key, value);
+    // Not Found
+    if (KVFound == vecSkeleton.end()) {
+        vecSkeleton.push_back(newKV);
+        return 0;
+    }
+    // Found
+    else {
+        vecSkeleton.erase(KVFound);
+        vecSkeleton.push_back(newKV);
         return 1;
     }
 }
@@ -82,5 +115,6 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value) {
 //}
 
 pmap::~pmap() {
-    theMap.clear();
+    vecIp.clear();
+    vecSkeleton.clear();
 }
