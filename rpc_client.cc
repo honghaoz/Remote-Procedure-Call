@@ -317,7 +317,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         
         // Receive message body
         int receivedSize = -1;
-        receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
+        receivedSize = (int)recv(sockfd, messageBody, messageLength, 0);
         if (receivedSize != messageLength) {
             perror("Client received wrong length of message body\n");
             return -1;
@@ -350,7 +350,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
                     }
                     case 2: {
                         uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
-                        assert(sizeOfArgsByte == argsSize(argTypes_received));
+                        //assert(sizeOfArgsByte == argsSize(argTypes_received));
                         argsByte_received = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                         memcpy(argsByte_received, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
                         break;
@@ -369,30 +369,29 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
             }
         }
         
-        printf("Execute Name: %s\n", name);
+        printf("Execute Name: %s\n", name_received);
         printf("Execute ArgTypes: ");
-        for (int i = 0; i < argTypesLength(argTypes); i++) {
-            printf("%s\n", u32ToBit(argTypes[i]));
+        for (int i = 0; i < argTypesLength(argTypes_received); i++) {
+            printf("%s\n", u32ToBit(argTypes_received[i]));
         }
         printf("\n");
         
-        printOutArgsByte(argTypes, argsByte);
+        printOutArgsByte(argTypes_received, argsByte_received);
         
         
         // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
         // BYTE *argsByte)
-        if (argsByteToArgs(argTypes, argsByte, args)) {
+        if (argsByteToArgs(argTypes_received, argsByte_received, args_received)) {
             printf("args init succeed!\n");
         } else {
-            serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-            free(name);
-            free(argTypes);
-            free(argsByte);
-            free(args);
+            free(name_received);
+            free(argTypes_received);
+            free(argsByte_received);
+            free(args_received);
             return -1;
         }
-        printOutArgs(argTypes, args);
-
+        printOutArgs(argTypes_received, args_received);
+        args = args_received;
     }
     else{
         printf("reasonCode: %d\n",response);
