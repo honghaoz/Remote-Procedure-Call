@@ -46,6 +46,7 @@ typedef int (*skeleton)(int *, void **);
 const char *u32ToBit(uint32_t x);
 void printBitRepresentation(BYTE *x, int byteNumber);
 uint32_t argTypesLength(int *argTypes);
+uint32_t argSize(uint32_t argInteger);
 uint32_t argsSize(int *argTypes);
     bool argTypesEqual(int *argTypes1, int *argTypes2);
 // Server side:

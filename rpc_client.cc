@@ -175,6 +175,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     return 0;
 }
 
+
 int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     if(name == NULL ){
         perror("null pointer of binder ip");
@@ -189,11 +190,13 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         return -1;
     }
     
+    int numofargs = argTypesLength(argTypes); // number of args
+    
     // Prepare message content
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
-    uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
-    uint32_t sizeOfargs;
-    uint32_t totalSize = sizeOfName + sizeOfArgTypes + 4;
+    uint32_t sizeOfArgTypes = numofargs * sizeof(int);
+    uint32_t sizeOfargs = argsSize(argTypes); //get the total size of all args
+    uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfargs + 2;
     
     
     BYTE messageBody[totalSize];
@@ -207,6 +210,15 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     offset += sizeOfArgTypes;
     memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,argTypes,]
     offset += 1;
+    for(int i = 0; i < numofargs; i++){
+        int lengthOfArray = argTypes[i] & ARG_ARRAY_LENGTH_MASK;
+        // If length is 0, scalar
+        if (lengthOfArray == 0) {
+            lengthOfArray = 1;
+        }
+        memcpy(messageBody + offset, args[i], lengthOfArray * argSize(argTypes[i]));
+        offset += lengthOfArray * argSize(argTypes[i]);
+    }
     
     
     uint32_t messageLength = totalSize;
@@ -214,6 +226,34 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     uint32_t messageLength_network = htonl(messageLength);
     uint32_t messageType_network = htonl(messageType);
     
+    
+    ssize_t operationResult = -1;
+    operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Server registion to binder: Send message length failed\n");
+        return -1;
+    }
+    printf("Send message length succeed: %zd\n", operationResult);
+    
+    // Send message type (4 bytes)
+    operationResult = -1;
+    operationResult = send(sockfd, &messageType_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Server registion to binder: Send message type failed\n");
+        return -1;
+    }
+    printf("Send message type succeed: %zd\n", operationResult);
+    
+    // Send message body (varied bytes)
+    operationResult = -1;
+    operationResult = send(sockfd, &messageBody, messageLength, 0);
+    if (operationResult != messageLength) {
+        perror("Server registion to binder: Send message body failed\n");
+        return -1;
+    }
+    printf("Send message body succeed: %zd\n", operationResult);
+    
+
     
     return 0;
 }
@@ -274,7 +314,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
         return -1;
     }
     
-    //executeRequest(name, argTypes, args, server_sockfd);
+    executeRequest(name, argTypes, args, server_sockfd);
     
     return 0;
 }
