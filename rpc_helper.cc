@@ -346,3 +346,149 @@ void printOutArgs(int * &argTypes, void ** &args) {
     }
     printf("\n");
 }
+
+void printOutArgsByte(int * &argTypes, BYTE * &argsByte) {
+    printf("argsByte: \n");
+    int offset = 0;
+    for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
+        uint32_t eachArgType = argTypes[i];
+        int argType = (eachArgType & ARG_TYPE_MASK) >> 16;
+        switch (argType) {
+            case ARG_CHAR: {
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                if (ArrayLenght == 0) {
+                    char var;
+                    memcpy(&var, argsByte + offset, sizeof(var));
+                    printf(" args[%d] (char) = %c\n", i, var);
+                    offset += sizeof(var);
+                } else if(ArrayLenght > 0) {
+                    uint32_t varsSize = sizeof(char) * ArrayLenght;
+                    char *vars = (char *)malloc(varsSize);
+                    memcpy(vars, argsByte + offset, varsSize);
+                    printf(" args[%d] (char) = [", i);
+                    for (int varIndex = 0; varIndex < ArrayLenght; varIndex++) {
+                        printf("%c, ", vars[varIndex]);
+                    }
+                    printf("]\n");
+                    offset += varsSize;
+                    free(vars);
+                } else {
+                    printf(" args[%d] (char) = array length error\n", i);
+                }
+                break;
+            }
+            case ARG_SHORT: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                if (ArrayLenght == 0) {
+                    
+                    short var = *(short *)args[i];
+                    printf(" args[%d] (short) = %hd\n", i, var);
+                } else if(ArrayLenght > 0) {
+                    uint32_t varsSize = sizeof(short) * ArrayLenght;
+                    short *vars = (short *)malloc(varsSize);
+                    memcpy(vars, args[i], varsSize);
+                    printf(" args[%d] (short) = [", i);
+                    for (int varIndex = 0; varIndex < ArrayLenght; varIndex++) {
+                        printf("%hd, ", vars[varIndex]);
+                    }
+                    printf("]\n");
+                    free(vars);
+                } else {
+                    printf(" args[%d] (short) = array length error\n", i);
+                }
+                break;
+            }
+            case ARG_INT: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                if (ArrayLenght == 0) {
+                    int var = *(int *)args[i];
+                    printf(" args[%d] (int) = %d\n", i, var);
+                } else if(ArrayLenght > 0) {
+                    uint32_t varsSize = sizeof(int) * ArrayLenght;
+                    int *vars = (int *)malloc(varsSize);
+                    memcpy(vars, args[i], varsSize);
+                    printf(" args[%d] (int) = [", i);
+                    for (int varIndex = 0; varIndex < ArrayLenght; varIndex++) {
+                        printf("%d, ", vars[varIndex]);
+                    }
+                    printf("]\n");
+                    free(vars);
+                } else {
+                    printf(" args[%d] (int) = array length error\n", i);
+                }
+                
+                break;
+            }
+            case ARG_LONG: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                if (ArrayLenght == 0) {
+                    long var = *(long *)args[i];
+                    printf(" args[%d] (long) = %ld\n", i, var);
+                } else if(ArrayLenght > 0) {
+                    uint32_t varsSize = sizeof(long) * ArrayLenght;
+                    long *vars = (long *)malloc(varsSize);
+                    memcpy(vars, args[i], varsSize);
+                    printf(" args[%d] (long) = [", i);
+                    for (int varIndex = 0; varIndex < ArrayLenght; varIndex++) {
+                        printf("%ld, ", vars[varIndex]);
+                    }
+                    printf("]\n");
+                    free(vars);
+                } else {
+                    printf(" args[%d] (long) = array length error\n", i);
+                }
+                
+                break;
+            }
+            case ARG_DOUBLE: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                if (ArrayLenght == 0) {
+                    double var = *(double *)args[i];
+                    printf(" args[%d] (double) = %f\n", i, var);
+                } else if(ArrayLenght > 0) {
+                    uint32_t varsSize = sizeof(double) * ArrayLenght;
+                    double *vars = (double *)malloc(varsSize);
+                    memcpy(vars, args[i], varsSize);
+                    printf(" args[%d] (double) = [", i);
+                    for (int varIndex = 0; varIndex < ArrayLenght; varIndex++) {
+                        printf("%f, ", vars[varIndex]);
+                    }
+                    printf("]\n");
+                    free(vars);
+                } else {
+                    printf(" args[%d] (double) = array length error\n", i);
+                }
+                break;
+            }
+            case ARG_FLOAT: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                if (ArrayLenght == 0) {
+                    float var = *(float *)args[i];
+                    printf(" args[%d] (float) = %f\n", i, var);
+                } else if(ArrayLenght > 0) {
+                    uint32_t varsSize = sizeof(float) * ArrayLenght;
+                    float *vars = (float *)malloc(varsSize);
+                    memcpy(vars, args[i], varsSize);
+                    printf(" args[%d] (float) = [", i);
+                    for (int varIndex = 0; varIndex < ArrayLenght; varIndex++) {
+                        printf("%f, ", vars[varIndex]);
+                    }
+                    printf("]\n");
+                    free(vars);
+                } else {
+                    printf(" args[%d] (float) = array length error\n", i);
+                }
+                break;
+            }
+            default:
+                perror("ArgsPrintOut: Arg type error \n");
+                break;
+        }
+    }
+    printf("\n");
+}

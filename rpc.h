@@ -46,6 +46,7 @@ typedef int (*skeleton)(int *, void **);
     if (ArrayLenght == 0) { \
         VAR var; \
         memcpy(&var, argsByte + offset, sizeof(var)); \
+        printf("argIndex: %d offset: %d\n", argIndex, offset); \
         args[argIndex] = (void *)&var; \
         offset += sizeof(var); \
     } else if (ArrayLenght > 0) { \
@@ -67,6 +68,7 @@ uint32_t argsSize(int *argTypes);
 bool argTypesEqual(int *argTypes1, int *argTypes2);
 bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args);
 void printOutArgs(int * &argTypes, void ** &args);
+void printOutArgsByte(int * &argTypes, BYTE * &argsByte);
     
 // Server side:
 extern int rpcInit();
