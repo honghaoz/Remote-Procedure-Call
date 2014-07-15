@@ -210,7 +210,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     offset += sizeOfArgTypes;
     memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,argTypes,]
     offset += 1;
-    for(int i = 0; i < numofargs; i++){
+    for(int i = 0; i < numofargs - 1; i++){
         int lengthOfArray = argTypes[i] & ARG_ARRAY_LENGTH_MASK;
         // If length is 0, scalar
         if (lengthOfArray == 0) {

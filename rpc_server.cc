@@ -546,6 +546,9 @@ int serverDealWithData(int connectionNumber) {
                     assert(sizeOfArgsByte == argsSize(argTypes));
                     argsByte = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                     memcpy(argsByte, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
+                    if (argsByte == NULL) {
+                        printf("549: argsByte is NULL\n");
+                    }
                     break;
                 }
                 default:
@@ -575,14 +578,25 @@ int serverDealWithData(int connectionNumber) {
         printf("%s\n", u32ToBit(argTypes[i]));
     }
     printf("\n");
+    if (argsByte == NULL) {
+        printf("582 argsByte is NULL\n");
+    }
     
-    // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL, 
+    // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
     args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     int offset = 0;
     int argIndex = 0;
+    if (argsByte == NULL) {
+        printf("590 argsByte is NULL\n");
+    }
     for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
         uint32_t eachArgType = argTypes[i];
-        switch (eachArgType & ARG_TYPE_MASK >> 16) {
+        int argType = (eachArgType & ARG_TYPE_MASK) >> 16;
+        printf("tytytyty: %d\n", argType);
+        if (argsByte == NULL) {
+            printf("597 argsByte is NULL\n");
+        }
+        switch (argType) {
             case ARG_CHAR: {
                 // Get array length
                 int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
@@ -598,7 +612,25 @@ int serverDealWithData(int connectionNumber) {
             case ARG_INT: {
                 // Get array length
                 int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
-                INIT_ARGS_I_WITH_TYPE(int)
+                printf("arrarLength: %d\n", ArrayLenght);
+//                INIT_ARGS_I_WITH_TYPE(int)
+                if (ArrayLenght == 0) {
+                    int var;
+                    if (argsByte == NULL) {
+                        printf("argsByte is NULL\n");
+                    }
+                    memcpy(&var, argsByte + offset, sizeof(int));
+                    args[argIndex] = (void *)&var;
+                    offset += sizeof(int);
+                } else if (ArrayLenght > 0) {
+                    uint32_t varsSize = sizeof(int) * ArrayLenght;
+                    int *vars = (int *)malloc(varsSize);
+                    memcpy(vars, argsByte + offset, varsSize);
+                    args[argIndex] = (void *)vars;
+                    offset += varsSize;
+                } else {
+                    perror("ARG_LENGTH error\n");
+                }
                 break;
             }
             case ARG_LONG: {

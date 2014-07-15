@@ -108,7 +108,6 @@ bool argTypesEqual(int *argTypes1, int *argTypes2) {
 // Return size of type from an integer in argTypes
 uint32_t argSize(uint32_t argInteger) {
     int argType = (argInteger & ARG_TYPE_MASK) >> 16;
-    printf("tytytyty: %d\n", argType);
     switch (argType) {
         case ARG_CHAR:
             return sizeof(char);
