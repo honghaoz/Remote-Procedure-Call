@@ -253,7 +253,12 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     }
     printf("Send message body succeed: %zd\n", operationResult);
     
-
+    printf("Name: %s\n", name);
+    printf("ArgTypes: ");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%ud ", argTypes[i]);
+    }
+    printf("\n");
     
     return 0;
 }
