@@ -148,3 +148,57 @@ uint32_t argsSize(int *argTypes) {
     }
     return result;
 }
+
+bool argsByteToArgs(int *argTypes, BYTE *argsByte, void **args) {
+    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
+    int offset = 0;
+    int argIndex = 0;
+    for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
+        uint32_t eachArgType = argTypes[i];
+        int argType = (eachArgType & ARG_TYPE_MASK) >> 16;
+        switch (argType) {
+            case ARG_CHAR: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(char)
+                break;
+            }
+            case ARG_SHORT: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(short)
+                break;
+            }
+            case ARG_INT: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(int)
+                break;
+            }
+            case ARG_LONG: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(long)
+                break;
+            }
+            case ARG_DOUBLE: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(double)
+                break;
+            }
+            case ARG_FLOAT: {
+                // Get array length
+                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
+                INIT_ARGS_I_WITH_TYPE(float)
+                break;
+            }
+            default:
+                perror("Arg type error \n");
+                return false;
+                break;
+        }
+        argIndex++;
+    }
+    return true;
+}

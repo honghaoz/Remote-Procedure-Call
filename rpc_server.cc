@@ -546,9 +546,6 @@ int serverDealWithData(int connectionNumber) {
                     assert(sizeOfArgsByte == argsSize(argTypes));
                     argsByte = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                     memcpy(argsByte, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
-                    if (argsByte == NULL) {
-                        printf("549: argsByte is NULL\n");
-                    }
                     break;
                 }
                 default:
@@ -573,96 +570,20 @@ int serverDealWithData(int connectionNumber) {
         printf("%s\n", u32ToBit(argTypes[i]));
     }
     printf("\n");
-    printf("Execute ArgsByte: ");
-    for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%s\n", u32ToBit(argTypes[i]));
-    }
-    printf("\n");
-    if (argsByte == NULL) {
-        printf("582 argsByte is NULL\n");
-    }
     
     // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
-    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
-    int offset = 0;
-    int argIndex = 0;
-    if (argsByte == NULL) {
-        printf("590 argsByte is NULL\n");
+    // BYTE *argsByte)
+    if (argsByteToArgs(argTypes, argsByte, args)) {
+        printf("args init succeed!\n");
+    } else {
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+        free(name);
+        free(argTypes);
+        free(argsByte);
+        free(args);
+        return -1;
     }
-    for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
-        uint32_t eachArgType = argTypes[i];
-        int argType = (eachArgType & ARG_TYPE_MASK) >> 16;
-        printf("tytytyty: %d\n", argType);
-        if (argsByte == NULL) {
-            printf("597 argsByte is NULL\n");
-        }
-        switch (argType) {
-            case ARG_CHAR: {
-                // Get array length
-                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
-                INIT_ARGS_I_WITH_TYPE(char)
-                break;
-            }
-            case ARG_SHORT: {
-                // Get array length
-                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
-                INIT_ARGS_I_WITH_TYPE(short)
-                break;
-            }
-            case ARG_INT: {
-                // Get array length
-                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
-                printf("arrarLength: %d\n", ArrayLenght);
-//                INIT_ARGS_I_WITH_TYPE(int)
-                if (ArrayLenght == 0) {
-                    int var;
-                    if (argsByte == NULL) {
-                        printf("argsByte is NULL\n");
-                    }
-                    memcpy(&var, argsByte + offset, sizeof(int));
-                    args[argIndex] = (void *)&var;
-                    offset += sizeof(int);
-                } else if (ArrayLenght > 0) {
-                    uint32_t varsSize = sizeof(int) * ArrayLenght;
-                    int *vars = (int *)malloc(varsSize);
-                    memcpy(vars, argsByte + offset, varsSize);
-                    args[argIndex] = (void *)vars;
-                    offset += varsSize;
-                } else {
-                    perror("ARG_LENGTH error\n");
-                }
-                break;
-            }
-            case ARG_LONG: {
-                // Get array length
-                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
-                INIT_ARGS_I_WITH_TYPE(long)
-                break;
-            }
-            case ARG_DOUBLE: {
-                // Get array length
-                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
-                INIT_ARGS_I_WITH_TYPE(double)
-                break;
-            }
-            case ARG_FLOAT: {
-                // Get array length
-                int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK;
-                INIT_ARGS_I_WITH_TYPE(float)
-                break;
-            }
-            default:
-                perror("Arg type error \n");
-                serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-                free(name);
-                free(argTypes);
-                free(argsByte);
-                free(args);
-                return -1;
-                break;
-        }
-        argIndex++;
-    }
+    
     std::pair<char *, int *> queryKey(name, argTypes);
     skeleton f = serverProcedureToSkeleton[queryKey];
     int executionResult = f(argTypes, args);

@@ -64,7 +64,10 @@ void printBitRepresentation(BYTE *x, int byteNumber);
 uint32_t argTypesLength(int *argTypes);
 uint32_t argSize(uint32_t argInteger);
 uint32_t argsSize(int *argTypes);
-    bool argTypesEqual(int *argTypes1, int *argTypes2);
+bool argTypesEqual(int *argTypes1, int *argTypes2);
+
+bool argsByteToArgs(int *argTypes, BYTE *argsByte, void **args);
+    
 // Server side:
 extern int rpcInit();
 extern int rpcRegister(char* name, int* argTypes, skeleton f);

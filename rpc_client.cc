@@ -196,7 +196,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
     uint32_t sizeOfArgTypes = numofargs * sizeof(int);
     uint32_t sizeOfargs = argsSize(argTypes); //get the total size of all args
-    uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfargs + 2;
+    uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfargs + 3;
     
     
     BYTE messageBody[totalSize];
@@ -220,8 +220,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         
         offset += lengthOfArray * argSize(argTypes[i]);
     }
-    
-    
+    memcpy(messageBody + offset, &seperator, 1);
     
     
     uint32_t messageLength = totalSize;
