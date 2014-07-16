@@ -246,13 +246,13 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     BYTE messageBody[totalSize];
     char seperator = ',';
     int offset = 0;
-    memcpy(messageBody+offset, name, sizeOfName); // [ip,portnum,name]
+    memcpy(messageBody+offset, name, sizeOfName); // [name]
     offset += sizeOfName;
-    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,]
+    memcpy(messageBody + offset, &seperator, 1); // [name,]
     offset += 1;
     memcpy(messageBody + offset, argTypes, sizeOfArgTypes); //
     offset += sizeOfArgTypes;
-    memcpy(messageBody + offset, &seperator, 1); // [ip,portnum,name,argTypes,]
+    memcpy(messageBody + offset, &seperator, 1); // [name,argTypes,]
     offset += 1;
     for(int i = 0; i < numofargs - 1; i++){
         int lengthOfArray = argTypes[i] & ARG_ARRAY_LENGTH_MASK;
