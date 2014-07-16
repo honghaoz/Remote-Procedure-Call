@@ -437,12 +437,14 @@ int rpcCall(char* name, int* argTypes, void** args) {
     }
     else if (receivedSize != messageLength) {
         perror("Binder received wrong length of message length\n");
+        close(binder_fd);
         return -1;
     }
     else {
         // Received message length should be 16 + sizeof(portNumber) + 2
         // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
+        close(binder_fd);
     }
     char* server_host = (char*)malloc(sizeof(sizeof(char) * 16));
     memcpy(server_host,message_body,16);
