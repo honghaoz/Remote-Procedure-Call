@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -350,9 +351,11 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
                     }
                     case 2: {
                         uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
-                        //assert(sizeOfArgsByte == argsSize(argTypes_received));
+                        assert(sizeOfArgsByte == argsSize(argTypes_received));
                         argsByte_received = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                         memcpy(argsByte_received, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
+                        printf("get message body\n");
+                        printOutArgsByte(argTypes_received, argsByte_received);
                         break;
                     }
                     default:
@@ -375,7 +378,9 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
             printf("%s\n", u32ToBit(argTypes_received[i]));
         }
         printf("\n");
-        
+        if(argsByte_received == NULL){
+            printf("args byte is null\n");
+        }
         printOutArgsByte(argTypes_received, argsByte_received);
         
         
