@@ -46,7 +46,6 @@ typedef int (*skeleton)(int *, void **);
     if (ArrayLenght == 0) { \
         VAR* var = (VAR*)malloc(sizeof(VAR)); \
         memcpy(var, argsByte + offset, sizeof(VAR)); \
-        printf("argIndex: %d offset: %d\n", argIndex, offset); \
         args[argIndex] = (void *)var; \
         offset += sizeof(VAR); \
     } else if (ArrayLenght > 0) { \
