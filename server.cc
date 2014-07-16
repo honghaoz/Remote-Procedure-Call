@@ -26,9 +26,14 @@ int main(int argc, char *argv[]) {
     int argTypes3[count3 + 1];
     int argTypes4[count4 + 1];
 
-    argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
-    argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
-    argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
+//    argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
+//    argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
+//    argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
+//    argTypes0[3] = 0;
+    
+    argTypes0[0] = (1 << ARG_OUTPUT) | (artt << 16);
+    argTypes0[1] = (1 << ARG_INPUT) | (artt << 16);
+    argTypes0[2] = (1 << ARG_INPUT) | (artt << 16);
     argTypes0[3] = 0;
 
     argTypes1[0] = (1 << ARG_OUTPUT) | (ARG_LONG << 16);
@@ -62,10 +67,10 @@ int main(int argc, char *argv[]) {
      * register server functions f0~f4
      */
     rpcRegister("f0", argTypes0, *f0_Skel);
-    rpcRegister("f1", argTypes1, *f1_Skel);
-    rpcRegister("f2", argTypes2, *f2_Skel);
-    rpcRegister("f3", argTypes3, *f3_Skel);
-    rpcRegister("f4", argTypes4, *f4_Skel);
+//    rpcRegister("f1", argTypes1, *f1_Skel);
+//    rpcRegister("f2", argTypes2, *f2_Skel);
+//    rpcRegister("f3", argTypes3, *f3_Skel);
+//    rpcRegister("f4", argTypes4, *f4_Skel);
 
     /* call rpcExecute */
     rpcExecute();

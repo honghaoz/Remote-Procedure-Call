@@ -547,6 +547,7 @@ int serverDealWithData(int connectionNumber) {
                 }
                 case 2: {
                     uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
+                    printf("Expected: %d, Actual: %d\n", argsSize(argTypes), sizeOfArgsByte);
                     assert(sizeOfArgsByte == argsSize(argTypes));
                     argsByte = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                     memcpy(argsByte, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);

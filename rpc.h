@@ -24,6 +24,9 @@ extern "C" {
 #define ARG_TYPE_MASK 0x00FF0000
 #define ARG_ARRAY_LENGTH_MASK 0x0000FFFF
 
+#define ttt long
+#define artt ARG_LONG
+    
 enum messageType{
     REGISTER = 1,
     REGISTER_SUCCESS = 2,
