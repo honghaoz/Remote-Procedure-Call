@@ -26,14 +26,9 @@ int main(int argc, char *argv[]) {
     int argTypes3[count3 + 1];
     int argTypes4[count4 + 1];
 
-//    argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
-//    argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
-//    argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
-//    argTypes0[3] = 0;
-    
-    argTypes0[0] = (1 << ARG_OUTPUT) | (artt << 16);
-    argTypes0[1] = (1 << ARG_INPUT) | (artt << 16);
-    argTypes0[2] = (1 << ARG_INPUT) | (artt << 16);
+    argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
+    argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
+    argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
     argTypes0[3] = 0;
 
     argTypes1[0] = (1 << ARG_OUTPUT) | (ARG_LONG << 16);

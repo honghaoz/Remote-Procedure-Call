@@ -10,10 +10,7 @@
  *       and if there is one it goes in args[0].
  */
 
-#include "rpc.h"
-
-//int f0(int a, int b);                    /* return: OUT; a, b: IN */
-ttt f0(ttt a, ttt b);                    /* return: OUT; a, b: IN */
+int f0(int a, int b);                    /* return: OUT; a, b: IN */
 
 long f1(char a, short b, int c, long d); /* returns: OUT; a, b, c, d: IN */
 

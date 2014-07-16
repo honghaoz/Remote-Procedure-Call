@@ -1,27 +1,17 @@
 #include "server_functions.h"
 #include <stdio.h>
 #include <string.h>
-#include "rpc.h"
-
-//int f0_Skel(int *argTypes, void **args) {
-////    int a0 = *(int *)args[1];
-////    int b0 = *(int *)args[2];
-////    int return0 = 0;
-//  *(int *)args[0] = f0(*(int *)args[1], *(int *)args[2]);
-////    return0 = *(int *)args[0];
-////    printf("%d + %d = %d\n", a0, b0, return0);
-//  return 0;
-//}
 
 int f0_Skel(int *argTypes, void **args) {
-    //    int a0 = *(int *)args[1];
-    //    int b0 = *(int *)args[2];
-    //    int return0 = 0;
-    *(ttt *)args[0] = f0(*(ttt *)args[1], *(ttt *)args[2]);
-    //    return0 = *(int *)args[0];
-    //    printf("%d + %d = %d\n", a0, b0, return0);
-    return 0;
+//    int a0 = *(int *)args[1];
+//    int b0 = *(int *)args[2];
+//    int return0 = 0;
+  *(int *)args[0] = f0(*(int *)args[1], *(int *)args[2]);
+//    return0 = *(int *)args[0];
+//    printf("%d + %d = %d\n", a0, b0, return0);
+  return 0;
 }
+
 
 int f1_Skel(int *argTypes, void **args) {
 

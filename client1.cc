@@ -18,39 +18,23 @@ using namespace std;
 int main() {
 
   /* prepare the arguments for f0 */
-//  int a0 = 5;
-//  int b0 = 10;
-//  int count0 = 3;
-//  int return0;
-//  int argTypes0[count0 + 1];
-//  void **args0;
-//
-//  argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
-//  argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
-//  argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
-//  argTypes0[3] = 0;
-//    
-//  args0 = (void **)malloc(count0 * sizeof(void *));
-//  args0[0] = (void *)&return0;
-//  args0[1] = (void *)&a0;
-//  args0[2] = (void *)&b0;
+  int a0 = 5;
+  int b0 = 10;
+  int count0 = 3;
+  int return0;
+  int argTypes0[count0 + 1];
+  void **args0;
+
+  argTypes0[0] = (1 << ARG_OUTPUT) | (ARG_INT << 16);
+  argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
+  argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
+  argTypes0[3] = 0;
     
-    ttt a0 = 10000;
-    ttt b0 = 20000;
-    int count0 = 3;
-    ttt return0;
-    int argTypes0[count0 + 1];
-    void **args0;
+  args0 = (void **)malloc(count0 * sizeof(void *));
+  args0[0] = (void *)&return0;
+  args0[1] = (void *)&a0;
+  args0[2] = (void *)&b0;
     
-    argTypes0[0] = (1 << ARG_OUTPUT) | (artt << 16);
-    argTypes0[1] = (1 << ARG_INPUT) | (artt << 16);
-    argTypes0[2] = (1 << ARG_INPUT) | (artt << 16);
-    argTypes0[3] = 0;
-    
-    args0 = (void **)malloc(count0 * sizeof(void *));
-    args0[0] = (void *)&return0;
-    args0[1] = (void *)&a0;
-    args0[2] = (void *)&b0;
 
   /* prepare the arguments for f1 */
   char a1 = 'a';

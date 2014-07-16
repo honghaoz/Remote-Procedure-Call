@@ -3,17 +3,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "rpc.h"
 
 /* return: OUT; a, b: IN */
-//int f0(int a, int b) {
-//
-//  return a + b;
-//}
+int f0(int a, int b) {
 
-ttt f0(ttt a, ttt b) {
-    
-    return a + b;
+  return a + b;
 }
 
 

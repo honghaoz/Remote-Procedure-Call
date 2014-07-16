@@ -157,7 +157,6 @@ int rpcBinderListen() {
     return 0;
 }
 void binderBuildConnectionList() {
-    printf("binderBuildConnectionList()\n");
 	// Clears out the fd_set called socks
 	FD_ZERO(&binderSocketsFD);
 	
@@ -460,9 +459,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
                     perror("Message Body Error\n");
 //                    responseType = LOC_FAILURE;
                     binderResponse(connectionSocket, LOC_FAILURE, -1);
-                    free(name);
-                    free(argTypes);
-                    free(ipv4Address);
+                    if (name != NULL) free(name);
+                    if (argTypes != NULL) free(argTypes);
                     return -1;
                     break;
             }
@@ -482,9 +480,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     if (queryResult == NULL) {
         perror("Procedure Not found");
         binderResponse(connectionSocket, LOC_FAILURE, -1);
-        free(name);
-        free(argTypes);
-        free(ipv4Address);
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
         return -1;
     }
     ipv4Address = queryResult->first;
@@ -521,9 +518,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     printf("Response located IP: %s\n", ipv4Address);
     printf("Response located Port: %d\n", portNumber);
     
-    free(ipv4Address);
-    free(name);
-    free(argTypes);
+    if (name != NULL) free(name);
+    if (argTypes != NULL) free(argTypes);
     return 0;
 }
 

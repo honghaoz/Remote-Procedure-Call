@@ -23,9 +23,6 @@ extern "C" {
 #define ARG_IO_MASK 0xFF000000
 #define ARG_TYPE_MASK 0x00FF0000
 #define ARG_ARRAY_LENGTH_MASK 0x0000FFFF
-
-#define ttt long
-#define artt ARG_LONG
     
 enum messageType{
     REGISTER = 1,
@@ -49,7 +46,6 @@ typedef int (*skeleton)(int *, void **);
     int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK; \
     if (ArrayLenght == 0) { \
         VAR* var = (VAR*)malloc(sizeof(VAR)); \
-        printf("new size: %lu\n", sizeof(VAR)); \
         memcpy(var, argsByte + offset, sizeof(VAR)); \
         args[argIndex] = (void *)var; \
         offset += sizeof(VAR); \

@@ -245,7 +245,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
         perror("Server registion to binder: Send message length failed\n");
         return -1;
     }
-    printf("Send message length succeed: %zd\n", operationResult);
+//    printf("Send message length succeed: %zd\n", operationResult);
     
     // Send message type (4 bytes)
     operationResult = -1;
@@ -254,7 +254,7 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
         perror("Server registion to binder: Send message type failed\n");
         return -1;
     }
-    printf("Send message type succeed: %zd\n", operationResult);
+//    printf("Send message type succeed: %zd\n", operationResult);
     
     // Send message body (varied bytes)
     operationResult = -1;
@@ -263,19 +263,21 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
         perror("Server registion to binder: Send message body failed\n");
         return -1;
     }
-    printf("Send message body succeed: %zd\n", operationResult);
+//    printf("Send message body succeed: %zd\n", operationResult);
 //    for (int i = 0; i < messageLength; i++) {
 //        printf("%c ", messageBody[i]);
 //    }
 //    printf("\n");
 //
-    printf("IP: %s\n", ipv4Address);
+//    printf("IP: %s\n", ipv4Address);
     printf("Port: %d\n", portNumber);
     printf("Name: %s\n", name);
-    printf("ArgTypes: ");
-    for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%ud ", argTypes[i]);
-    }
+//    printf("ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%ud ", argTypes[i]);
+//    }
+//    printf("\n");
+    
     printf("\n");
     
     // 3,  Receive registration response from binder

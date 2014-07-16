@@ -153,44 +153,44 @@ bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args) {
 //    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     int offset = 0;
     int argIndex = 0;
-    printf("There is %d args\n", argTypesLength(argTypes));
+//    printf("There is %d args\n", argTypesLength(argTypes));
     for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
-        printf("i: %d\n", i);
+//        printf("i: %d\n", i);
         uint32_t eachArgType = argTypes[i];
         int argType = (eachArgType & ARG_TYPE_MASK) >> 16;
         switch (argType) {
             case ARG_CHAR: {
-                printf("Type: char\n");
+//                printf("Type: char\n");
                 // Get array length
                 INIT_ARGS_I_WITH_TYPE(char)
                 break;
             }
             case ARG_SHORT: {
-                printf("Type: short\n");
+//                printf("Type: short\n");
                 // Get array length
                 INIT_ARGS_I_WITH_TYPE(short)
                 break;
             }
             case ARG_INT: {
-                printf("Type: int\n");
+//                printf("Type: int\n");
                 // Get array length
                 INIT_ARGS_I_WITH_TYPE(int)
                 break;
             }
             case ARG_LONG: {
-                printf("Type: long\n");
+//                printf("Type: long\n");
                 // Get array length
                 INIT_ARGS_I_WITH_TYPE(long)
                 break;
             }
             case ARG_DOUBLE: {
-                printf("Type: double\n");
+//                printf("Type: double\n");
                 // Get array length
                 INIT_ARGS_I_WITH_TYPE(double)
                 break;
             }
             case ARG_FLOAT: {
-                printf("Type: float\n");
+//                printf("Type: float\n");
                 // Get array length
                 INIT_ARGS_I_WITH_TYPE(float)
                 break;
