@@ -57,10 +57,9 @@ int Connection(const char* hostname, const char* portnumber){
     return socketfd;
 }
 
-int socketfd = -1;
 
 int ConnectToBinder(){
-    if(socketfd < 0){
+    int socketfd = -1;
         //connect to binder
 #warning Need to change to dynamic address
         std::string name = "127.0.0.1";
@@ -82,11 +81,6 @@ int ConnectToBinder(){
             exit(-1);
         }
         return socketfd;
-    }
-    else{
-        //already connected to binder, return the socket descriptor
-        return socketfd;
-    }
 }
 
 
