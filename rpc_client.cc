@@ -119,10 +119,10 @@ int clientHandleResponse(int connectionSocket) {
     printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
     if (responseType == EXECUTE_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
-        std::cerr << "Server response: REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;
+        std::cerr << "Server response: EXECUTE_FAILURE Error Code: " << responseErrorCode << std::endl;
         return responseErrorCode;
     } else if (responseType == EXECUTE_SUCCESS) {
-        printf("Server response: REGISTER_SUCCESS\n");
+        printf("Server response: EXECUTE_SUCCESS\n");
         return 0;
     } else {
         return 0;
@@ -338,14 +338,14 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
                 switch (messageCount) {
                     case 0: {
                         uint32_t sizeOfName = i - (lastSeperatorIndex + 1);
-                        name = (char *)malloc(sizeof(char) * sizeOfName);
+                        name_received = (char *)malloc(sizeof(char) * sizeOfName);
                         memcpy(name_received, messageBody + lastSeperatorIndex + 1, sizeOfName);
                         break;
                     }
                     case 1: {
                         uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);
-                        argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
-                        memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
+                        argTypes_received = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                        memcpy(argTypes_received, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);
                         break;
                     }
                     case 2: {
