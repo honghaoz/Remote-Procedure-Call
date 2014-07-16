@@ -261,12 +261,12 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
             lengthOfArray = 1;
         }
         memcpy(messageBody + offset, args[i], lengthOfArray * argSize(argTypes[i]));
-        
+        std::cout<<i<<" th arg size is "<<argSize(argTypes[i])<<std::endl;
         offset += lengthOfArray * argSize(argTypes[i]);
     }
     memcpy(messageBody + offset, &seperator, 1);
     
-    
+    printf("total message size: %d\n",totalSize);
     uint32_t messageLength = totalSize;
     uint32_t messageType = EXECUTE;
     uint32_t messageLength_network = htonl(messageLength);
