@@ -411,12 +411,12 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
             }
         }
         
-        printf("Execute Name: %s\n", name_received);
-        printf("Execute ArgTypes: ");
-        for (int i = 0; i < argTypesLength(argTypes_received); i++) {
-            printf("%s\n", u32ToBit(argTypes_received[i]));
-        }
-        printf("\n");
+//        printf("Execute Name: %s\n", name_received);
+//        printf("Execute ArgTypes: ");
+//        for (int i = 0; i < argTypesLength(argTypes_received); i++) {
+//            printf("%s\n", u32ToBit(argTypes_received[i]));
+//        }
+//        printf("\n");
         if(argsByte_received == NULL){
             printf("args byte is null\n");
         }
