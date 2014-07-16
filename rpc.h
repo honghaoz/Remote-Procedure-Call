@@ -46,9 +46,10 @@ typedef int (*skeleton)(int *, void **);
 #include <stdint.h>
   
 #define INIT_ARGS_I_WITH_TYPE(VAR) \
+    int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK; \
     if (ArrayLenght == 0) { \
         VAR* var = (VAR*)malloc(sizeof(VAR)); \
-        printf("new size: %d\n", sizeof(VAR)); \
+        printf("new size: %lu\n", sizeof(VAR)); \
         memcpy(var, argsByte + offset, sizeof(VAR)); \
         args[argIndex] = (void *)var; \
         offset += sizeof(VAR); \
