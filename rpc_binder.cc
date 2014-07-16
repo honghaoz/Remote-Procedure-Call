@@ -157,6 +157,7 @@ int rpcBinderListen() {
     return 0;
 }
 void binderBuildConnectionList() {
+    printf("binderBuildConnectionList()\n");
 	// Clears out the fd_set called socks
 	FD_ZERO(&binderSocketsFD);
 	
@@ -241,6 +242,7 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
         perror("Binder sends response errorCode failed\n");
         return -1;
     }
+    printf("Binder responseType: %d, errorCode: %d\n", responseType, errorCode);
     
     return 0;
 }
@@ -310,14 +312,17 @@ int binderDealWithData(int connectionNumber) {
     
     switch (messageType) {
         case REGISTER: {
+            printf("\n******************* NEW REGISTER *******************\n");
             return binderDealWithRegisterMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case LOC_REQUEST: {
+            printf("\n******************* NEW LOCATE *******************\n");
             return binderDealWithLocateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case TERMINATE: {
+            printf("\n******************* NEW TERMINATE *******************\n");
             return binderDealWithTerminateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
@@ -417,6 +422,15 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     }
 }
 
+/**
+ *  Use received message to find an available server, response the IP and Port number
+ *
+ *  @param connectionSocket Socket descriptor for binder for client
+ *  @param messageBody      [name,argTypes,]
+ *  @param messageBodySize  size for [name,argTypes,]
+ *
+ *  @return Execute result
+ */
 int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
     // Message body: [name,argTypes,]
     char *name = NULL;
@@ -426,9 +440,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     int lastSeperatorIndex = -1;
     int messageCount = 0;
     
-    enum messageType responseType = LOC_SUCCESS;
     // Process message body, initialize ip, port, name, argTypes
-    for (int i = 0; i < messageBodySize && responseType == LOC_SUCCESS; i++) {
+    for (int i = 0; i < messageBodySize /*&& responseType == LOC_SUCCESS*/; i++) {
         if (messageBody[i] == ',') {
             switch (messageCount) {
                 case 0: {
@@ -445,7 +458,12 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
                 }
                 default:
                     perror("Message Body Error\n");
-                    responseType = LOC_FAILURE;
+//                    responseType = LOC_FAILURE;
+                    binderResponse(connectionSocket, LOC_FAILURE, -1);
+                    free(name);
+                    free(argTypes);
+                    free(ipv4Address);
+                    return -1;
                     break;
             }
             lastSeperatorIndex = i;
@@ -453,61 +471,60 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         }
     }
     printf("Locate Name: %s\n", name);
-    printf("Locate ArgTypes: ");
-    for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%ud ", argTypes[i]);
-    }
-    printf("\n");
-    if (responseType == LOC_SUCCESS) {
-        P_NAME_TYPES queryKey(name, argTypes);
-        P_IP_PORT *queryResult = binderProcedureToID.findIp(queryKey);
-        if (queryResult == NULL) {
-            perror("Procedure Not found");
-            goto Response;
-        }
-        ipv4Address = queryResult->first;
-        portNumber = queryResult->second;
-        
-        printf("Found IP: %s Port: %d\n", ipv4Address, portNumber);
-        
-        // Prepare message body: [ip,portnum,]
-        uint32_t sizeOfIp = 16; // the fixed length of IP address; define to be IP_SIZE later maybe
-        uint32_t sizeOfPort = sizeof(portNumber);
-        char seperator = ',';
-        uint32_t sizeOfSeperator = sizeof(seperator);
-        uint32_t totalSize = sizeOfIp + sizeOfPort + 2 * sizeOfSeperator;
-        BYTE messageBody[totalSize];
-        int offset = 0;
-        memcpy(messageBody + offset, ipv4Address, sizeOfIp); // [ip]
-        offset += sizeOfIp;
-        memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,]
-        offset += sizeOfSeperator;
-        memcpy(messageBody + offset, &portNumber, sizeOfPort); // [ip,portnum]
-        offset += sizeOfPort;
-        memcpy(messageBody + offset, &seperator, sizeOfSeperator); // [ip,portnum,]
-        offset += sizeOfSeperator;
-        
-        // Send message body
-        ssize_t operationResult = -1;
-        operationResult = send(connectionSocket, &messageBody, totalSize, 0);
-        if (operationResult != totalSize) {
-            perror("Binder to server: Send ip+portnum failed\n");
-            return -1;
-        }
-        printf("Located IP: %s\n", ipv4Address);
-        printf("Located Port: %d\n", portNumber);
-    } else {
-        free(ipv4Address);
+//    printf("Locate ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%ud ", argTypes[i]);
+//    }
+//    printf("\n");
+    
+    P_NAME_TYPES queryKey(name, argTypes);
+    P_IP_PORT *queryResult = binderProcedureToID.findIp(queryKey);
+    if (queryResult == NULL) {
+        perror("Procedure Not found");
+        binderResponse(connectionSocket, LOC_FAILURE, -1);
         free(name);
         free(argTypes);
-    }
-Response:
-    binderResponse(connectionSocket, responseType, 1);
-    if (responseType == REGISTER_SUCCESS) {
-        return 0;
-    } else {
+        free(ipv4Address);
         return -1;
     }
+    ipv4Address = queryResult->first;
+    portNumber = queryResult->second;
+    printf("Found IP: %s Port: %d\n", ipv4Address, portNumber);
+    
+    binderResponse(connectionSocket, LOC_SUCCESS, 0);
+    
+    // Send back founded IP and Port
+    // Prepare message body: [ip,portnum,]
+    uint32_t sizeOfIp = 16; // the fixed length of IP address; define to be IP_SIZE later maybe
+    uint32_t sizeOfPort = sizeof(portNumber);
+    char seperator = ',';
+    uint32_t sizeOfSeperator = sizeof(seperator);
+    uint32_t totalSize = sizeOfIp + sizeOfPort + 2 * sizeOfSeperator;
+    BYTE messageBodyResponse[totalSize];
+    int offset = 0;
+    memcpy(messageBodyResponse + offset, ipv4Address, sizeOfIp); // [ip]
+    offset += sizeOfIp;
+    memcpy(messageBodyResponse + offset, &seperator, sizeOfSeperator); // [ip,]
+    offset += sizeOfSeperator;
+    memcpy(messageBodyResponse + offset, &portNumber, sizeOfPort); // [ip,portnum]
+    offset += sizeOfPort;
+    memcpy(messageBodyResponse + offset, &seperator, sizeOfSeperator); // [ip,portnum,]
+    offset += sizeOfSeperator;
+    
+    // Send message body
+    ssize_t operationResult = -1;
+    operationResult = send(connectionSocket, &messageBodyResponse, totalSize, 0);
+    if (operationResult != totalSize) {
+        perror("Binder to server: Send ip+portnum failed\n");
+        return -1;
+    }
+    printf("Response located IP: %s\n", ipv4Address);
+    printf("Response located Port: %d\n", portNumber);
+    
+    free(ipv4Address);
+    free(name);
+    free(argTypes);
+    return 0;
 }
 
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
