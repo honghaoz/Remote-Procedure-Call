@@ -354,8 +354,6 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
                         assert(sizeOfArgsByte == argsSize(argTypes_received));
                         argsByte_received = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                         memcpy(argsByte_received, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
-                        printf("get message body\n");
-                        printOutArgsByte(argTypes_received, argsByte_received);
                         break;
                     }
                     default:
