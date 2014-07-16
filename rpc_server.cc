@@ -617,6 +617,8 @@ int serverDealWithData(int connectionNumber) {
     // Send EXECUTE_SUCCESS
     serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
     
+    printOutArgs(argTypes, args);
+    
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
