@@ -649,7 +649,7 @@ int serverDealWithData(int connectionNumber) {
             lengthOfArray = 1;
         }
         uint32_t copySize = lengthOfArray * argSize(argTypes[i]);
-        memcpy(messageBody + offset, args[i], copySize);
+        memcpy(messageBodyResponse + offset, args[i], copySize);
         offset += copySize;
     }
     memcpy(messageBodyResponse + offset, &seperator, sizeof(seperator));
