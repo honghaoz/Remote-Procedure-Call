@@ -231,7 +231,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     ssize_t operationResult = -1;
     operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Server registion to binder: Send message length failed\n");
+        perror("Client registion to binder: Send message length failed\n");
         return -1;
     }
     printf("Send message length succeed: %zd\n", operationResult);
@@ -240,7 +240,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     operationResult = -1;
     operationResult = send(sockfd, &messageType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Server registion to binder: Send message type failed\n");
+        perror("Client registion to binder: Send message type failed\n");
         return -1;
     }
     printf("Send message type succeed: %zd\n", operationResult);
@@ -249,17 +249,17 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     operationResult = -1;
     operationResult = send(sockfd, &messageBody, messageLength, 0);
     if (operationResult != messageLength) {
-        perror("Server registion to binder: Send message body failed\n");
+        perror("Client registion to binder: Send message body failed\n");
         return -1;
     }
     printf("Send message body succeed: %zd\n", operationResult);
     
-    printf("Name: %s\n", name);
-    printf("ArgTypes: ");
-    for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%ud ", argTypes[i]);
-    }
-    printf("\n");
+//    printf("Name: %s\n", name);
+//    printf("ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%ud ", argTypes[i]);
+//    }
+//    printf("\n");
 
     return 0;
 }
@@ -322,7 +322,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     ssize_t operationResult = -1;
     operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Server registion to binder: Send message length failed\n");
+        perror("Client request execute to server: Send message length failed\n");
         return -1;
     }
     //printf("Send message length succeed: %zd\n", operationResult);
@@ -331,7 +331,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     operationResult = -1;
     operationResult = send(sockfd, &messageType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Server registion to binder: Send message type failed\n");
+        perror("Client request execute to server: Send message type failed\n");
         return -1;
     }
     //printf("Send message type succeed: %zd\n", operationResult);
@@ -340,7 +340,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     operationResult = -1;
     operationResult = send(sockfd, &messageBody, messageLength, 0);
     if (operationResult != messageLength) {
-        perror("Server registion to binder: Send message body failed\n");
+        perror("Client request execute to server: Send message body failed\n");
         return -1;
     }
     //printf("Send message body succeed: %zd\n", operationResult);
