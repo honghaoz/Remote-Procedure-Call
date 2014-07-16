@@ -126,7 +126,7 @@ int clientHandleBinderResponse(int connectionSocket) {
         printf("Binder response: EXECUTE_SUCCESS\n");
         return 0;
     } else {
-        perror("No such a response type from binder to server!\n");
+        perror("No such a response type from binder to client!\n");
         return -1;
     }
 }
