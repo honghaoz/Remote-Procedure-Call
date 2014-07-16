@@ -150,7 +150,7 @@ uint32_t argsSize(int *argTypes) {
 }
 
 bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args) {
-    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
+//    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     int offset = 0;
     int argIndex = 0;
     for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {

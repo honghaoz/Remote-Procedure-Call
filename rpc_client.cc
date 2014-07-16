@@ -329,7 +329,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         char *name_received = NULL;
         int *argTypes_received = NULL;
         BYTE *argsByte_received = NULL; //expanded args
-        void ** args_received = NULL;
+        //void ** args_received = NULL;
         int lastSeperatorIndex = -1;
         int messageCount = 0;
         
@@ -361,7 +361,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
                         free(name_received);
                         free(argTypes_received);
                         free(argsByte_received);
-                        free(args_received);
+//                        free(args_received);
                         return -1;
                         break;
                 }
@@ -384,17 +384,17 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         
         // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
         // BYTE *argsByte)
-        if (argsByteToArgs(argTypes_received, argsByte_received, args_received)) {
+        if (argsByteToArgs(argTypes_received, argsByte_received, args)) {
             printf("args init succeed!\n");
         } else {
             free(name_received);
             free(argTypes_received);
             free(argsByte_received);
-            free(args_received);
+//            free(args_received);
             return -1;
         }
-        printOutArgs(argTypes_received, args_received);
-        args = args_received;
+        printOutArgs(argTypes_received, args);
+//        args = args_received;
     }
     else{
         printf("reasonCode: %d\n",response);

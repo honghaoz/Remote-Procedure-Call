@@ -580,6 +580,7 @@ int serverDealWithData(int connectionNumber) {
     
     // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
     // BYTE *argsByte)
+    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     if (argsByteToArgs(argTypes, argsByte, args)) {
         printf("args init succeed!\n");
     } else {
