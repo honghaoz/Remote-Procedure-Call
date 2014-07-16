@@ -90,10 +90,10 @@ int ConnectToBinder(){
 
 
 //**********************************
-// clientHandleResponse
+// clientHandleBinderResponse
 //
 //**********************************
-int clientHandleResponse(int connectionSocket) {
+int clientHandleBinderResponse(int connectionSocket) {
     uint32_t responseType_network = 0;
     uint32_t responseType = 0;
     uint32_t responseErrorCode_network = 0;
@@ -112,6 +112,51 @@ int clientHandleResponse(int connectionSocket) {
     receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("Client receive binder response errorCode failed\n");
+        return -1;
+    }
+    
+    responseType = ntohl(responseType_network);
+    responseErrorCode = ntohl(responseErrorCode_network);
+    printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
+    if (responseType == LOC_FAILURE) {
+        //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
+        std::cerr << "Binder response: EXECUTE_FAILURE Error Code: " << responseErrorCode << std::endl;
+        return responseErrorCode;
+    } else if (responseType == LOC_SUCCESS) {
+        printf("Binder response: EXECUTE_SUCCESS\n");
+        return 0;
+    } else {
+        perror("No such a response type from binder to server!\n");
+        return -1;
+    }
+}
+
+
+
+
+//**********************************
+// clientHandleResponse
+//
+//**********************************
+int clientHandleResponse(int connectionSocket) {
+    uint32_t responseType_network = 0;
+    uint32_t responseType = 0;
+    uint32_t responseErrorCode_network = 0;
+    uint32_t responseErrorCode = 0;
+    
+    // Receive response type
+    ssize_t receivedSize = -1;
+    receivedSize = recv(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Client receive server response type failed\n");
+        return -1;
+    }
+    receivedSize = -1;
+    
+    // Receive response error code
+    receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
+    if (receivedSize != sizeof(uint32_t)) {
+        perror("Client receive server response errorCode failed\n");
         return -1;
     }
     
@@ -422,6 +467,12 @@ int rpcCall(char* name, int* argTypes, void** args) {
     
     locationRequest(name, argTypes,binder_fd);
     
+    
+    int reasoncode = clientHandleBinderResponse(binder_fd);
+    if(reasoncode != 0){
+        perror("failed to connect to binder\n");
+        return reasoncode;
+    }
     //get the ip and port from binder
     ssize_t receivedSize = -1;
     char seperator = ',';
