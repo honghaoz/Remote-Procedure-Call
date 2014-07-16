@@ -76,6 +76,7 @@ int ConnectToBinder(){
             exit(-1);
         }
         socketfd = Connection(host, portnum);
+        std::cout<<"new socket fd with binder is: "<<socketfd<<std::endl;
         if(socketfd < 0){
             std::cerr<<"wrong socket identifier!"<<std::endl;
             exit(-1);
@@ -324,7 +325,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         perror("Server registion to binder: Send message length failed\n");
         return -1;
     }
-    printf("Send message length succeed: %zd\n", operationResult);
+    //printf("Send message length succeed: %zd\n", operationResult);
     
     // Send message type (4 bytes)
     operationResult = -1;
@@ -333,7 +334,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         perror("Server registion to binder: Send message type failed\n");
         return -1;
     }
-    printf("Send message type succeed: %zd\n", operationResult);
+    //printf("Send message type succeed: %zd\n", operationResult);
     
     // Send message body (varied bytes)
     operationResult = -1;
@@ -342,16 +343,16 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         perror("Server registion to binder: Send message body failed\n");
         return -1;
     }
-    printf("Send message body succeed: %zd\n", operationResult);
+    //printf("Send message body succeed: %zd\n", operationResult);
     
-    printf("Name: %s\n", name);
-    printf("ArgTypes: ");
-    for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%s\n", u32ToBit(argTypes[i]));
-    }
-    printf("\n");
+//    printf("Name: %s\n", name);
+//    printf("ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%s\n", u32ToBit(argTypes[i]));
+//    }
+//    printf("\n");
     
-    printOutArgs(argTypes, args);
+    //printOutArgs(argTypes, args);
     
     
     int response = 0;
@@ -368,7 +369,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
             perror("Client received wrong length of message body\n");
             return -1;
         }
-        printf("Received length of message body: %zd\n", receivedSize);
+        //printf("Received length of message body: %zd\n", receivedSize);
         
         // Message body: [name,argTypes,argsByte,]
         char *name_received = NULL;
@@ -424,7 +425,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         if(argsByte_received == NULL){
             printf("args byte is null\n");
         }
-        printOutArgsByte(argTypes_received, argsByte_received);
+        //printOutArgsByte(argTypes_received, argsByte_received);
         
         
         // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
@@ -438,7 +439,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
 //            free(args_received);
             return -1;
         }
-        printOutArgs(argTypes_received, args);
+        //printOutArgs(argTypes_received, args);
 //        args = args_received;
     }
     else{
@@ -458,7 +459,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
 
 int rpcCall(char* name, int* argTypes, void** args) {
     std::cout << "rpcCall(" << name << ")" << std::endl;
-    int binder_fd, server_fd;
+    int binder_fd;
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
         std::cerr<<"Binder Connection Error Ocurrs!"<<std::endl;
@@ -507,17 +508,17 @@ int rpcCall(char* name, int* argTypes, void** args) {
     int server_sockfd;
     std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = Connection(server_host, server_port);
-    if(server_fd < 0){
+    if(server_sockfd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
         return -1;
     }
     
     reasoncode = executeRequest(name, argTypes, args, server_sockfd);
     if(reasoncode != 0){
-        close(server_fd);
+        close(server_sockfd);
         return  reasoncode;
     }
-    close(server_fd);
+    close(server_sockfd);
     return 0;
 }
 int rpcCacheCall(char* name, int* argTypes, void** args) {
