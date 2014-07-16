@@ -323,6 +323,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("Client request execute to server: Send message length failed\n");
+        std::cout<<"expect length is: "<<sizeof(uint32_t)<<" and the actual length is: "<<operationResult<<std::endl;
         return -1;
     }
     //printf("Send message length succeed: %zd\n", operationResult);
