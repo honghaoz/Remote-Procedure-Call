@@ -427,7 +427,6 @@ int serverHandleNewConnection() {
 // Server send back response
 int serverResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
     // Send response message to server
-    printf("type: %d, errorCode: %d\n", responseType, errorCode);
     uint32_t responseType_network = htonl(responseType);
     uint32_t responseErrorCode_network = htonl(errorCode);
     
@@ -438,7 +437,6 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
         perror("Server sends response failed\n");
         return -1;
     }
-    printf("Server send response: %d succeed\n", responseType_network);
     
     // Send response error code
     operationResult = -1;
@@ -447,8 +445,7 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
         perror("Server sends response errorCode failed\n");
         return -1;
     }
-    printf("Server send response errorCode: %d succeed\n", errorCode);
-    
+    printf("Server responseType: %d, errorCode: %d\n", responseType, errorCode);
     return 0;
 }
 int serverDealWithData(int connectionNumber) {
@@ -570,13 +567,13 @@ int serverDealWithData(int connectionNumber) {
     }
     
     printf("Execute Name: %s\n", name);
-    printf("Execute ArgTypes: ");
-    for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%s\n", u32ToBit(argTypes[i]));
-    }
-    printf("\n");
+//    printf("Execute ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%s\n", u32ToBit(argTypes[i]));
+//    }
+//    printf("\n");
     
-    printOutArgsByte(argTypes, argsByte);
+//    printOutArgsByte(argTypes, argsByte);
     
     
     // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
@@ -593,7 +590,7 @@ int serverDealWithData(int connectionNumber) {
         return -1;
     }
     
-    printOutArgs(argTypes, args);
+//    printOutArgs(argTypes, args);
     
     P_NAME_TYPES queryKey(name, argTypes);
     
@@ -619,7 +616,7 @@ int serverDealWithData(int connectionNumber) {
     // Send EXECUTE_SUCCESS
     serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
     
-    printOutArgs(argTypes, args);
+//    printOutArgs(argTypes, args);
     
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
