@@ -120,10 +120,10 @@ int clientHandleBinderResponse(int connectionSocket) {
     printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
     if (responseType == LOC_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
-        std::cerr << "Binder response: EXECUTE_FAILURE Error Code: " << responseErrorCode << std::endl;
+        std::cerr << "Binder response: LOC_FAILURE Error Code: " << responseErrorCode << std::endl;
         return responseErrorCode;
     } else if (responseType == LOC_SUCCESS) {
-        printf("Binder response: EXECUTE_SUCCESS\n");
+        printf("Binder response: LOC_SUCCESS\n");
         return 0;
     } else {
         printf("No such a response type from binder to client! Type is: %d\n",responseType);
