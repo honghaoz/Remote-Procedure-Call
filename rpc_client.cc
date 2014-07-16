@@ -509,6 +509,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
     int server_sockfd;
     std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = Connection(server_host, server_port);
+    std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
     if(server_sockfd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
         return -1;
