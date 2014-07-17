@@ -55,7 +55,7 @@ bool isPairEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     }
 }
 
-P_IP_PORT* pmap::findIp(P_NAME_TYPES key) {
+P_IP_PORT* pmap::findIp_client(P_NAME_TYPES key) {
     for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
         if (isPairEqual(key, existedKey)) {
@@ -75,8 +75,9 @@ skeleton pmap::findSkeleton(P_NAME_TYPES key) {
     return NULL;
 }
 
+// rpcBinder will call
 // Insert new KV, return 0: inserted, return 1: replaced.
-int pmap::insert(P_NAME_TYPES key, P_IP_PORT value) {
+int pmap::insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value) {
     std::vector<P_MAP_IP_PORT>::iterator KVFound = vecIp.end();
     for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
@@ -98,6 +99,7 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value) {
     }
 }
 
+// rpcServer will call
 // Insert new KV, return 0: inserted, return 1: replaced.
 int pmap::insert(P_NAME_TYPES key, skeleton value) {
     std::vector<P_MAP_SKELETON>::iterator KVFound = vecSkeleton.end();
@@ -120,7 +122,6 @@ int pmap::insert(P_NAME_TYPES key, skeleton value) {
         return 1;
     }
 }
-
 
 pmap::~pmap() {
     vecIp.clear();

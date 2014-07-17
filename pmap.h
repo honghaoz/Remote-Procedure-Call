@@ -14,22 +14,27 @@
 #include <typeinfo>
 #include "rpc.h"
 
+// Keys
 typedef std::pair<char *, int*> P_NAME_TYPES;
+typedef std::pair<P_NAME_TYPES, int> P_NAME_TYPES_SOCKET;
+
+// Values
 typedef std::pair<char *, int> P_IP_PORT;
-typedef std::pair<P_NAME_TYPES, P_IP_PORT> P_MAP_IP_PORT;
+
+typedef std::pair<P_NAME_TYPES_SOCKET, P_IP_PORT> P_MAP_IP_PORT;
 typedef std::pair<P_NAME_TYPES, skeleton> P_MAP_SKELETON;
 
 class pmap {
     std::vector<P_MAP_IP_PORT> vecIp;
     std::vector<P_MAP_SKELETON> vecSkeleton;
+    std::vector<int> vecSocket;
 public:
-    P_IP_PORT* findIp(P_NAME_TYPES key);
-    skeleton findSkeleton(P_NAME_TYPES key);
-    int insert(P_NAME_TYPES key, P_IP_PORT value);
-    int insert(P_NAME_TYPES key, skeleton value);
-//    int remove(P_NAME_TYPES key);
+    P_IP_PORT* findIp_client(P_NAME_TYPES key); // rpcBinder will call
+    skeleton findSkeleton(P_NAME_TYPES key); // rpcServer will call
+    int insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value); // rpcBinder register
+    int insert(P_NAME_TYPES key, skeleton value); //  rpcServer register
+    P_IP_PORT *findIP(P_NAME_TYPES key1, int key2);
     pmap();
-//    pmap(P_NAME_TYPES key, P_IP_PORT value);
     ~pmap();
 };
 
