@@ -103,23 +103,57 @@ skeleton pmap::findSkeleton(P_NAME_TYPES key) {
     return NULL;
 }
 
-// rpcBinder will call
-// Insert new KV, return 0: inserted, return 1: replaced.
+/**
+ *  Try to add newSocket to Socket list (vecSocket)
+ *  If newSocket is already exsit in vecSocket, do nothing
+ *  Else, append newSocket to vecSocket
+ *
+ *  @param newSocket Socket file descriptor
+ */
+void pmap::addToVectorSocket(int newSocket) {
+    std::vector<int>::iterator socketFound = vecSocket.end();
+    for (std::vector<int>::iterator it = vecSocket.begin(); it != vecSocket.end(); it++) {
+        // If newSocket is equal to current socket
+        if (newSocket == *it) {
+            socketFound = it;
+            break;
+        }
+    }
+    // Not found, add newSocket to vecSocket
+    if (socketFound == vecSocket.end()) {
+        vecSocket.push_back(newSocket);
+    }
+}
+
+/**
+ *  Binder register new procedure with it's IP/Port
+ *  rpcBinder will call.
+ *
+ *  @param key   P_NAME_TYPES_SOCKET, new procedure to be registered
+ *  @param value P_IP_PORT, new IP/Port to be registered
+ *
+ *  @return 0, inserted. 1, replaced.
+ */
 int pmap::insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value) {
+    
+    // Figure out whether new key is exist
     std::vector<P_MAP_IP_PORT>::iterator KVFound = vecIp.end();
     for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
-        P_NAME_TYPES existedKey = it->first;
-        if (isPairEqual(key, existedKey)) {
+        P_NAME_TYPES_SOCKET existedKey = it->first;
+        if (isNameTypesSocketEqual(key, existedKey)) {
             KVFound = it;
+            break;
         }
     }
     P_MAP_IP_PORT newKV = P_MAP_IP_PORT(key, value);
-    // Not Found
+    // Not Found, add new entry to vecIp and try to add socket to vecSocket
     if (KVFound == vecIp.end()) {
         vecIp.push_back(newKV);
+        int newSocket = key.second;
+        addToVectorSocket(newSocket);
         return 0;
     }
-    // Found
+    // Found, replace old entry with new entr. No need to add to vecSocket
     else {
         vecIp.erase(KVFound);
         vecIp.push_back(newKV);
@@ -127,8 +161,15 @@ int pmap::insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value) {
     }
 }
 
-// rpcServer will call
-// Insert new KV, return 0: inserted, return 1: replaced.
+/**
+ *  Server register new procedure with this procedure's skeleton
+ *  rpcServer will call.
+ *
+ *  @param key   P_NAME_TYPES, new procedure to be registered
+ *  @param value skeleton, skeleton for the new procedure
+ *
+ *  @return 0, inserted. 1, replaced.
+ */
 int pmap::insert(P_NAME_TYPES key, skeleton value) {
     std::vector<P_MAP_SKELETON>::iterator KVFound = vecSkeleton.end();
     for (std::vector<P_MAP_SKELETON>::iterator it = vecSkeleton.begin(); it != vecSkeleton.end(); it++) {
