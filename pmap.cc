@@ -29,13 +29,18 @@ void processArgTypes(int* argTypes){
     }
 }
 
-
+//std::vector<int> vecSocket;
+//typedef std::pair<char *, int*> P_NAME_TYPES;
+//typedef std::pair<P_NAME_TYPES, int> P_NAME_TYPES_SOCKET;
 P_IP_PORT *findIP(P_NAME_TYPES key1, int key2){
-    
+    std::pair<P_NAME_TYPES, int> key(key1,key2);
     
 }
 
 P_IP_PORT* findIp_client(P_NAME_TYPES key){
+    for(std::vector<int>::iterator it = vecSocket.begin(); it != vecSocket.end();it++){
+        
+    }
     
     
 }
