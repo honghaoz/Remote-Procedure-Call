@@ -34,6 +34,7 @@ fd_set binderSocketsFD; // Socket file descriptors that we want to wake up for
 int binderHighestSocket; // Highest # of socket file descriptor
 
 pmap binderProcedureToID;
+#define BINDER_TERMINATE 999
 
 #pragma mark - rpcBinderInit()
 /********************** rpcBinderInit() *************************
@@ -147,13 +148,16 @@ int rpcBinderListen() {
             return -1;
         }
         if (numberOfReadSockets > 0) {
-            if (binderReadSockets() < 0) {
-                return -1;
+            if (binderReadSockets() == BINDER_TERMINATE) {
+                //return -1;
+                printf("Binder will terminate\n");
+                break;
             }
         }
     }
     
     close(binderListenSocket);
+    printf("Binder terminate!\n");
     return 0;
 }
 void binderBuildConnectionList() {
@@ -184,8 +188,11 @@ int binderReadSockets() {
     // Check whether there is new data come in
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
         if (FD_ISSET(binderConnections[i], &binderSocketsFD)) {
-            if (binderDealWithData(i) < 0) {
+            int resultOfBinderDealWithData = binderDealWithData(i);
+            if (resultOfBinderDealWithData < 0) {
                 return -1;
+            } else if (resultOfBinderDealWithData == BINDER_TERMINATE) {
+                return BINDER_TERMINATE;
             }
         }
     }
@@ -272,7 +279,12 @@ int binderDealWithData(int connectionNumber) {
         
         // Set this place to be available
         binderConnections[connectionNumber] = 0;
-        return 0;
+        for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
+            if (binderConnections[i] != 0) {
+                return 0;
+            }
+        }
+        return BINDER_TERMINATE;
     }
     else if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message length\n");
@@ -533,10 +545,46 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
 
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber) {
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
+        printf("Check %dth socket\n", i);
         // If this is socket for client, continue
         if (i == connectionNumber) continue;
         int eachServerSocket = binderConnections[i];
+        if (eachServerSocket == 0) continue;
         // For each serverSocket, send out Terminate message
+        BYTE* messageBody = NULL;
+        
+        // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
+        uint32_t messageLength = 0;
+        uint32_t messageType = TERMINATE;
+        uint32_t messageLength_network = htonl(messageLength);
+        uint32_t messageType_network = htonl(messageType);
+        
+        // Send message length (4 bytes)
+        ssize_t operationResult = -1;
+        operationResult = send(eachServerSocket, &messageLength_network, sizeof(uint32_t), 0);
+        if (operationResult != sizeof(uint32_t)) {
+            perror("Binder termination message to server: Send message length failed\n");
+            return -1;
+        }
+        printf("Binder sends termination message length succeed: %zd\n", operationResult);
+        
+        // Send message type (4 bytes)
+        operationResult = -1;
+        operationResult = send(eachServerSocket, &messageType_network, sizeof(uint32_t), 0);
+        if (operationResult != sizeof(uint32_t)) {
+            perror("Binder termination message to server: Send message type failed\n");
+            return -1;
+        }
+        printf("Binder sends termination message type succeed: %zd\n", operationResult);
+        
+        // Send message body (varied bytes)
+        operationResult = -1;
+        operationResult = send(eachServerSocket, &messageBody, messageLength, 0);
+        if (operationResult != messageLength) {
+            perror("Binder termination message to server: Send message body failed\n");
+            return -1;
+        }
+        printf("Binder sends termination message body succeed: %zd\n", operationResult);
     }
     return 0;
 }

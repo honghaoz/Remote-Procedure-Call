@@ -6,7 +6,6 @@
 
 /* return: OUT; a, b: IN */
 int f0(int a, int b) {
-    sleep(5);
   return a + b;
 }
 

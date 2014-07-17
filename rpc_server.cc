@@ -55,6 +55,8 @@ struct threadArgs {
     int messageLength;
 };
 
+#define SERVER_TERMINATE 999
+
 
 #pragma mark - rpcInit()
 /************************* rpcInit() *************************
@@ -179,6 +181,13 @@ int serverToBinderInit() {
         perror("Server to binder: Connect failed. Error");
         return -1;
     }
+    
+    // Add serverToBinder socket to connectionList
+    if (serverToBinderSocket > serverHighestSocket) {
+        serverHighestSocket = serverToBinderSocket;
+    }
+    serverConnections[0] = serverToBinderSocket;
+    
     return 0;
 }
 
@@ -361,12 +370,15 @@ int rpcExecute() {
             return -1;
         }
         if (numberOfReadSockets > 0) {
-            if (serverReadSockets() < 0) {
-                return -1;
+            if (serverReadSockets() == SERVER_TERMINATE) {
+                //return -1;
+                printf("Server will terminate\n");
+                break;
             }
         }
     }
     close(serverForClientSocket);
+    printf("Server terminated\n");
     return 0;
 }
 
@@ -398,8 +410,11 @@ int serverReadSockets() {
     // Check whether there is new data come in
     for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
         if (FD_ISSET(serverConnections[i], &serverSocketsFD)) {
-            if (serverDealWithData(i) < 0) {
+            int resultOfServerDealWithData = serverDealWithData(i);
+            if (resultOfServerDealWithData < 0) {
                 return -1;
+            } else if (resultOfServerDealWithData == SERVER_TERMINATE) {
+                return SERVER_TERMINATE;
             }
         }
     }
@@ -513,6 +528,17 @@ int serverDealWithData(int connectionNumber) {
         printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
     }
+    // Server should terminate
+    if (messageType == TERMINATE) {
+        printf("Server received TERMINATE message\n");
+        printf("Authenticating... ");
+        if (connectionSocket == serverToBinderSocket) {
+            printf("message comes from binder. Accept\n");
+            return SERVER_TERMINATE;
+        }
+        printf("message doesn't come from binder. Reject\n");
+    }
+    
     // If type is not EXECUTE
     if (messageType != EXECUTE) {
         perror("Server received wrong message type\n");
