@@ -18,8 +18,8 @@ using namespace std;
 int main() {
 
   /* prepare the arguments for f0 */
-  int a0 = 5;
-  int b0 = 10;
+  int a0 = -1;
+  int b0 = -5;
   int count0 = 3;
   int return0;
   int argTypes0[count0 + 1];
