@@ -29,21 +29,7 @@ void processArgTypes(int* argTypes){
     }
 }
 
-//std::vector<int> vecSocket;
-//typedef std::pair<char *, int*> P_NAME_TYPES;
-//typedef std::pair<P_NAME_TYPES, int> P_NAME_TYPES_SOCKET;
-P_IP_PORT *findIP(P_NAME_TYPES key1, int key2){
-    std::pair<P_NAME_TYPES, int> key(key1,key2);
-    
-}
 
-P_IP_PORT* findIp_client(P_NAME_TYPES key){
-    for(std::vector<int>::iterator it = vecSocket.begin(); it != vecSocket.end();it++){
-        
-    }
-    
-    
-}
 
 bool isNameTypesEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     string k1Name(k1.first);
@@ -83,14 +69,30 @@ bool isNameTypesSocketEqual(P_NAME_TYPES_SOCKET k1, P_NAME_TYPES_SOCKET k2) {
     }
 }
 
-P_IP_PORT* pmap::findIp_client(P_NAME_TYPES key) {
-    for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
-        P_NAME_TYPES existedKey = it->first;
-        if (isPairEqual(key, existedKey)) {
-            return &it->second;
+
+P_IP_PORT* pmap::findIP(P_NAME_TYPES key1, int key2){
+    P_NAME_TYPES_SOCKET key(key1,key2); // create the key to find ip and port
+    for(std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end();it++){
+        if(isNameTypesSocketEqual(it->first,key)){
+            return &(it->second); // return the poiner of ip&port pair
         }
     }
     return NULL;
+}
+
+
+P_IP_PORT* pmap::findIp_client(P_NAME_TYPES key) {
+    P_IP_PORT* IpAndPort = NULL;
+    for (std::vector<int>::iterator it = vecSocket.begin(); it != vecSocket.end(); it++) {
+        IpAndPort = this->findIP(key, *it);
+        if(IpAndPort != NULL){// if get the value, put the socket to the bottom of vector
+            int socket = *it; 
+            this->vecSocket.erase(it);
+            this->vecSocket.push_back(socket);
+            break;
+        }
+    }
+    return IpAndPort;
 }
 
 skeleton pmap::findSkeleton(P_NAME_TYPES key) {

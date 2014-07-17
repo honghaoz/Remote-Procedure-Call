@@ -29,6 +29,7 @@ class pmap {
     std::vector<P_MAP_SKELETON> vecSkeleton;
     std::vector<int> vecSocket;
     void addToVectorSocket(int newSocket);
+    P_IP_PORT* findIP(P_NAME_TYPES key1, int key2);
 public:
     P_IP_PORT* findIp_client(P_NAME_TYPES key); // rpcBinder will call
     skeleton findSkeleton(P_NAME_TYPES key); // rpcServer will call
