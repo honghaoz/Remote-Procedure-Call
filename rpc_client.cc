@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <math.h>
+#include <sstream>
 #include "rpc.h"
 //using namespace std;
 
@@ -498,7 +499,9 @@ int rpcCall(char* name, int* argTypes, void** args) {
     memcpy(server_host,message_body,16);
     int portnum;
     memcpy(&portnum, message_body+17, sizeof(int));
-    std::string s = std::to_string(portnum);
+    std::ostringstream convert;
+    convert << portnum;
+    std::string s = convert.str();
     const char* server_port = s.c_str();
 
     int server_sockfd;
