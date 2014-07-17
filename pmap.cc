@@ -37,11 +37,11 @@ bool isNameTypesEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     int sizeofk1 = sizeof(int)*argTypesLength(k1Types);
     int *k1copy = (int*)malloc(sizeofk1);
     memcpy(k1copy,k1Types,sizeofk1);
-    std::cout<<"argtypes before process"<<std::endl;
-    printOutArgTypes(k1copy);
+//    std::cout<<"argtypes before process"<<std::endl;
+//    printOutArgTypes(k1copy);
     processArgTypes(k1copy);
-    std::cout<<"argtypes after process"<<std::endl;
-    printOutArgTypes(k1copy);
+//    std::cout<<"argtypes after process"<<std::endl;
+//    printOutArgTypes(k1copy);
     
     string k2Name(k2.first);
     int *k2Types = k2.second;

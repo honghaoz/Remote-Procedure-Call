@@ -458,9 +458,10 @@ int serverDealWithData(int connectionNumber) {
     pthread_t newExecutionThread;
     int threadCreatedResult = pthread_create(&newExecutionThread, NULL, serverHandleNewExecution, (void *)&connectionNumber);
     if (threadCreatedResult != 0) {
-        printf("Dispatch new execution thread failed: %d", threadCreatedResult);
+        printf("Dispatch new execution thread failed: %d\n", threadCreatedResult);
         return -1;
     }
+    printf("Dispatch new execution thread succeed\n");
     return 0;
 }
 
