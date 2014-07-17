@@ -33,7 +33,6 @@ public:
     skeleton findSkeleton(P_NAME_TYPES key); // rpcServer will call
     int insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value); // rpcBinder register
     int insert(P_NAME_TYPES key, skeleton value); //  rpcServer register
-    P_IP_PORT *findIP(P_NAME_TYPES key1, int key2);
     pmap();
     ~pmap();
 };

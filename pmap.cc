@@ -29,7 +29,18 @@ void processArgTypes(int* argTypes){
     }
 }
 
-bool isPairEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
+
+P_IP_PORT *findIP(P_NAME_TYPES key1, int key2){
+    
+    
+}
+
+P_IP_PORT* findIp_client(P_NAME_TYPES key){
+    
+    
+}
+
+bool isNameTypesEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     string k1Name(k1.first);
     int *k1Types = k1.second;
     int sizeofk1 = sizeof(int)*argTypesLength(k1Types);
@@ -68,7 +79,7 @@ P_IP_PORT* pmap::findIp_client(P_NAME_TYPES key) {
 skeleton pmap::findSkeleton(P_NAME_TYPES key) {
     for (std::vector<P_MAP_SKELETON>::iterator it = vecSkeleton.begin(); it != vecSkeleton.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
-        if (isPairEqual(key, existedKey)) {
+        if (isNameTypesEqual(key, existedKey)) {
             return it->second;
         }
     }
@@ -105,7 +116,7 @@ int pmap::insert(P_NAME_TYPES key, skeleton value) {
     std::vector<P_MAP_SKELETON>::iterator KVFound = vecSkeleton.end();
     for (std::vector<P_MAP_SKELETON>::iterator it = vecSkeleton.begin(); it != vecSkeleton.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
-        if (isPairEqual(key, existedKey)) {
+        if (isNameTypesEqual(key, existedKey)) {
             KVFound = it;
         }
     }
