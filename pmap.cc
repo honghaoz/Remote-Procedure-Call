@@ -20,11 +20,35 @@ pmap::pmap(){
 //    theMap.push_back(newKV);
 //}
 
+#define PROCESS_MASK 0xFFFF0000
+
+void processArgTypes(int* argTypes){
+    for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
+        int *eachArgType = &argTypes[i];
+        int arrayLenght = *eachArgType & ARG_ARRAY_LENGTH_MASK;
+        if (arrayLenght > 0) {
+            (*eachArgType) &= PROCESS_MASK;
+            (*eachArgType)++;
+            std::cout<<"argtypes after process"<<std::endl;
+            printOutArgTypes(eachArgType);
+        }
+    }
+}
+
 bool isPairEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     string k1Name(k1.first);
     int *k1Types = k1.second;
+    int sizeofk1 = sizeof(int)*argTypesLength(k1Types);
+    int *k1copy = (int*)malloc(sizeofk1);
+    memcpy(k1copy,k1Types,sizeofk1);
+    processArgTypes(k1copy);
+    
     string k2Name(k2.first);
     int *k2Types = k2.second;
+    int sizeofk2 = sizeof(int)*argTypesLength(k2Types);
+    int *k2copy = (int*)malloc(sizeofk2);
+    memcpy(k2copy,k2Types,sizeofk2);
+    processArgTypes(k2copy);
     
     if ((k1Name == k2Name) && argTypesEqual(k1Types, k2Types)) {
         return true;

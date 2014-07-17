@@ -205,6 +205,14 @@ bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args) {
     return true;
 }
 
+void printOutArgTypes(int *argTypes) {
+    printf("ArgTypes: \n");
+    for (int i = 0; i < argTypesLength(argTypes); i++) {
+        printf("%s\n", u32ToBit(argTypes[i]));
+    }
+    printf("\n");
+}
+
 // print out args
 void printOutArgs(int * &argTypes, void ** &args) {
     printf("args: \n");
