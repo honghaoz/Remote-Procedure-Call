@@ -16,6 +16,7 @@
 #include <math.h>
 #include <utility>
 #include <map>
+#include <pthread.h>
 #include <assert.h>
 #include "rpc.h"
 #include "pmap.h"

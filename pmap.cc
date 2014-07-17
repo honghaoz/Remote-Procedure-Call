@@ -9,6 +9,8 @@
 #include "pmap.h"
 #include "rpc.h"
 #include <string>
+#include <stdlib.h>
+#include <string.h>
 using namespace std;
 
 
