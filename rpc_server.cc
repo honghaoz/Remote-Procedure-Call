@@ -27,7 +27,7 @@
  *
  ****************************************************/
 
-#define MAX_NUMBER_OF_CLIENTS 10
+#define MAX_NUMBER_OF_CLIENTS 100
 // Socket descriptor of server for clients
 int serverForClientSocket; // server Listening socket
 int serverConnections[MAX_NUMBER_OF_CLIENTS]; // Array of connected clients
@@ -45,6 +45,7 @@ uint32_t portNumber;
 //std::map<std::pair<char *, int *>, skeleton> serverProcedureToSkeleton;
 pmap serverProcedureToSkeleton;
 
+pthread_mutex_t mutex;
 
 
 
@@ -288,7 +289,7 @@ int serverHandleResponse(int connectionSocket) {
     uint32_t responseType_network = 0;
     uint32_t responseType = 0;
     uint32_t responseErrorCode_network = 0;
-    uint32_t responseErrorCode = 0;
+    int responseErrorCode = 0;
     
     // Receive response type
     ssize_t receivedSize = -1;
@@ -340,6 +341,7 @@ void serverBuildConnectionList();
 int serverReadSockets();
 int serverHandleNewConnection();
 int serverDealWithData(int connectionNumber);
+void *serverHandleNewExecution(void *t);
 
 int rpcExecute() {
     std::cout << "rpcExecute()" << std::endl;
@@ -450,13 +452,22 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
     printf("Server responseType: %d, errorCode: %d\n", responseType, errorCode);
     return 0;
 }
+
 int serverDealWithData(int connectionNumber) {
-#warning thread?
     // Dispatch a new thread to handle procedure execution
-    
+    pthread_t newExecutionThread;
+    int threadCreatedResult = pthread_create(&newExecutionThread, NULL, serverHandleNewExecution, (void *)&connectionNumber);
+    if (threadCreatedResult != 0) {
+        printf("Dispatch new execution thread failed: %d", threadCreatedResult);
+        return -1;
+    }
+    return 0;
+}
+
+void* serverHandleNewExecution(void *t) {
+    int connectionNumber = *(int *)t;
     // Get the socket descriptor
     int connectionSocket = serverConnections[connectionNumber];
-    
     // Expected Message: [MessageLength][MessageType][name,argTypes,args,]
     
     // Prepare for message length, message type
@@ -472,19 +483,22 @@ int serverDealWithData(int connectionNumber) {
     if (receivedSize == 0) {
         printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
         close(connectionSocket);
-        
+    
         // Set this place to be available
+        pthread_mutex_lock(&mutex);
         serverConnections[connectionNumber] = 0;
-        return 0;
+        pthread_mutex_unlock(&mutex);
+//        return 0;
+        pthread_exit((void*) 0);
     }
     else if (receivedSize != sizeof(uint32_t)) {
         perror("Server received wrong length of message length\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-        return -1;
+        pthread_exit((void*) 0);;
     }
     else { // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
-//        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+        //        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
         messageLength = ntohl(messageLength_network);
     }
     
@@ -494,7 +508,7 @@ int serverDealWithData(int connectionNumber) {
     if (receivedSize != sizeof(uint32_t)) {
         perror("Server received wrong length of message type\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-        return -1;
+        pthread_exit((void*) 0);;
     } else { // Receive message length correctly
         printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
@@ -503,7 +517,7 @@ int serverDealWithData(int connectionNumber) {
     if (messageType != EXECUTE) {
         perror("Server received wrong message type\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-        return -1;
+        pthread_exit((void*) 0);;
     }
     
     // Allocate messageBody
@@ -514,7 +528,7 @@ int serverDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
         perror("Server received wrong length of message body\n");
-        return -1;
+        pthread_exit((void*) 0);;
     }
     printf("Received length of message body: %zd\n", receivedSize);
     
@@ -554,13 +568,13 @@ int serverDealWithData(int connectionNumber) {
                 }
                 default:
                     perror("Message Body Error\n");
-//                    responseType = EXECUTE_FAILURE;
+                    //                    responseType = EXECUTE_FAILURE;
                     serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
                     free(name);
                     free(argTypes);
                     free(argsByte);
                     free(args);
-                    return -1;
+                    pthread_exit((void*) 0);;
                     break;
             }
             lastSeperatorIndex = i;
@@ -569,13 +583,13 @@ int serverDealWithData(int connectionNumber) {
     }
     
     printf("Execute Name: %s\n", name);
-//    printf("Execute ArgTypes: ");
-//    for (int i = 0; i < argTypesLength(argTypes); i++) {
-//        printf("%s\n", u32ToBit(argTypes[i]));
-//    }
-//    printf("\n");
+    //    printf("Execute ArgTypes: ");
+    //    for (int i = 0; i < argTypesLength(argTypes); i++) {
+    //        printf("%s\n", u32ToBit(argTypes[i]));
+    //    }
+    //    printf("\n");
     
-//    printOutArgsByte(argTypes, argsByte);
+    //    printOutArgsByte(argTypes, argsByte);
     
     
     // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
@@ -589,10 +603,10 @@ int serverDealWithData(int connectionNumber) {
         free(argTypes);
         free(argsByte);
         free(args);
-        return -1;
+        pthread_exit((void*) 0);;
     }
     
-//    printOutArgs(argTypes, args);
+    //    printOutArgs(argTypes, args);
     
     P_NAME_TYPES queryKey(name, argTypes);
     
@@ -612,13 +626,13 @@ int serverDealWithData(int connectionNumber) {
         free(argTypes);
         free(argsByte);
         free(args);
-        return 0;
+        pthread_exit((void*) 0);;
     }
     printf("EXE succeed\n");
     // Send EXECUTE_SUCCESS
     serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
     
-//    printOutArgs(argTypes, args);
+    //    printOutArgs(argTypes, args);
     
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
@@ -629,7 +643,7 @@ int serverDealWithData(int connectionNumber) {
     // Send back size should equal to messagelength
     if (messageLength != totalSize) {
         serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-        return -1;
+        pthread_exit((void*) 0);;
     }
     // Prepare messageBody
     BYTE messageBodyResponse[totalSize];
@@ -665,7 +679,7 @@ int serverDealWithData(int connectionNumber) {
         free(argTypes);
         free(argsByte);
         free(args);
-        return -1;
+        pthread_exit((void*) 0);;
     }
     
     // Free allocated varilables
@@ -674,5 +688,5 @@ int serverDealWithData(int connectionNumber) {
     free(argsByte);
     free(args);
     
-    return 0;
+    pthread_exit((void*) 0);;
 }
