@@ -447,6 +447,50 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
 }
 
 
+
+int terminateRequest(int sockfd){
+    //error checking?
+    // Prepare message content
+    
+    
+    BYTE* messageBody = NULL;
+    
+    // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
+    uint32_t messageLength = 0;
+    uint32_t messageType = TERMINATE;
+    uint32_t messageLength_network = htonl(messageLength);
+    uint32_t messageType_network = htonl(messageType);
+    
+    // Send message length (4 bytes)
+    ssize_t operationResult = -1;
+    operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Client termination message to binder: Send message length failed\n");
+        return -1;
+    }
+    printf("Send termination message length succeed: %zd\n", operationResult);
+    
+    // Send message type (4 bytes)
+    operationResult = -1;
+    operationResult = send(sockfd, &messageType_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Client termination message to binder: Send message type failed\n");
+        return -1;
+    }
+    printf("Send termination message type succeed: %zd\n", operationResult);
+    
+    // Send message body (varied bytes)
+    operationResult = -1;
+    operationResult = send(sockfd, &messageBody, messageLength, 0);
+    if (operationResult != messageLength) {
+        perror("Client termination message to binder: Send message body failed\n");
+        return -1;
+    }
+    printf("Send termination message body succeed: %zd\n", operationResult);
+    
+    return 0;
+}
+
 /******************* Client Functions ****************
  *
  *  Description: Client related functions
@@ -527,6 +571,19 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
 }
 int rpcTerminate() {
     std::cout << "rpcTerminate()" << std::endl;
+    int binder_fd;
+    binder_fd = ConnectToBinder();//connect to binder first
+    if(binder_fd < 0){
+        std::cerr<<"Binder Connection Error Ocurrs!"<<std::endl;
+        return -1;
+    }
+
+    int result = terminateRequest(binder_fd);
+    if(result != 0){
+        perror("terminate failed!\n");
+        return -1;
+    }
+    
     return 0;
 }
 
