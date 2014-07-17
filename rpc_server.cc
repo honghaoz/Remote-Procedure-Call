@@ -612,7 +612,7 @@ int serverDealWithData(int connectionNumber) {
         free(argTypes);
         free(argsByte);
         free(args);
-        return -1;
+        return 0;
     }
     printf("EXE succeed\n");
     // Send EXECUTE_SUCCESS
