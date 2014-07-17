@@ -583,7 +583,7 @@ int rpcTerminate() {
         perror("terminate failed!\n");
         return -1;
     }
-    
+    close(binder_fd);
     return 0;
 }
 
