@@ -137,7 +137,7 @@ int clientHandleResponse(int connectionSocket) {
     uint32_t responseType_network = 0;
     uint32_t responseType = 0;
     uint32_t responseErrorCode_network = 0;
-    uint32_t responseErrorCode = 0;
+    int responseErrorCode = 0;
     
     // Receive response type
     ssize_t receivedSize = -1;
@@ -439,6 +439,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     }
     else{
         printf("reasonCode: %d\n",response);
+        return response;
     }
     
     return 0;
@@ -512,7 +513,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
     reasoncode = executeRequest(name, argTypes, args, server_sockfd);
     if(reasoncode != 0){
         close(server_sockfd);
-        return  reasoncode;
+        return reasoncode;
     }
     close(server_sockfd);
     return 0;
