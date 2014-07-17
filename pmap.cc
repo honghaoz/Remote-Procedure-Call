@@ -11,16 +11,12 @@
 #include <string>
 using namespace std;
 
+
+#define PROCESS_MASK 0xFFFF0000
+
 pmap::pmap(){
     // Do nothing
 }
-
-//pmap::pmap(P_NAME_TYPES key, P_IP_PORT value) {
-//    P_MAP_IP_PORT newKV = P_MAP_IP_PORT(key, value);
-//    theMap.push_back(newKV);
-//}
-
-#define PROCESS_MASK 0xFFFF0000
 
 void processArgTypes(int* argTypes){
     for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
@@ -125,20 +121,6 @@ int pmap::insert(P_NAME_TYPES key, skeleton value) {
     }
 }
 
-//for (std::map<std::pair<char *, int *>, std::pair<char *, int>>::iterator it = binderProcedureToID.begin(); it != binderProcedureToID.end(); it++) {
-//    std::pair<char *, int *> key = it->first;
-//    std::pair<char *, int> value = it->second;
-//    printf("\nKey: \n");
-//    printf("Name: %s\n", key.first);
-//    printf("ArgTypes: ");
-//    for (int i = 0; i < argTypesLength(key.second); i++) {
-//        printf("%ud ", key.second[i]);
-//    }
-//    printf("\n");
-//    printf("Value: \n");
-//    printf("IP: %s, Port: %d", value.first, value.second);
-//    
-//}
 
 pmap::~pmap() {
     vecIp.clear();
