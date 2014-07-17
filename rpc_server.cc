@@ -47,7 +47,12 @@ pmap serverProcedureToSkeleton;
 
 pthread_mutex_t mutex;
 
-
+struct threadArgs {
+    BYTE *messageBody;
+    int connectionSocket;
+    long receivedSize;
+    int messageLength;
+};
 
 
 #pragma mark - rpcInit()
@@ -414,7 +419,9 @@ int serverHandleNewConnection() {
     for (int i = 0; (i < MAX_NUMBER_OF_CLIENTS) && (i != -1); i++) {
         if (serverConnections[i] == 0) {
             printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
+            pthread_mutex_lock(&mutex);
             serverConnections[i] = newSock;
+            pthread_mutex_unlock(&mutex);
             newSock = -1;
             break;
         }
@@ -454,19 +461,8 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
 }
 
 int serverDealWithData(int connectionNumber) {
-    // Dispatch a new thread to handle procedure execution
-    pthread_t newExecutionThread;
-    int threadCreatedResult = pthread_create(&newExecutionThread, NULL, serverHandleNewExecution, (void *)&connectionNumber);
-    if (threadCreatedResult != 0) {
-        printf("Dispatch new execution thread failed: %d\n", threadCreatedResult);
-        return -1;
-    }
-    printf("Dispatch new execution thread succeed\n");
-    return 0;
-}
-
-void* serverHandleNewExecution(void *t) {
-    int connectionNumber = *(int *)t;
+    // 1, Receive data from client
+    
     // Get the socket descriptor
     int connectionSocket = serverConnections[connectionNumber];
     // Expected Message: [MessageLength][MessageType][name,argTypes,args,]
@@ -484,18 +480,19 @@ void* serverHandleNewExecution(void *t) {
     if (receivedSize == 0) {
         printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
         close(connectionSocket);
-    
+        
         // Set this place to be available
         pthread_mutex_lock(&mutex);
         serverConnections[connectionNumber] = 0;
         pthread_mutex_unlock(&mutex);
-//        return 0;
-        pthread_exit((void*) 0);
+        return 0;
+//        pthread_exit((void*) 0);
     }
     else if (receivedSize != sizeof(uint32_t)) {
         perror("Server received wrong length of message length\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-        pthread_exit((void*) 0);;
+//        pthread_exit((void*) 0);;
+        return 0;
     }
     else { // Receive message length correctly
         printf("Received length of message length: %zd\n", receivedSize);
@@ -509,7 +506,8 @@ void* serverHandleNewExecution(void *t) {
     if (receivedSize != sizeof(uint32_t)) {
         perror("Server received wrong length of message type\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-        pthread_exit((void*) 0);;
+//        pthread_exit((void*) 0);
+        return 0;
     } else { // Receive message length correctly
         printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
@@ -518,7 +516,8 @@ void* serverHandleNewExecution(void *t) {
     if (messageType != EXECUTE) {
         perror("Server received wrong message type\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
-        pthread_exit((void*) 0);;
+//        pthread_exit((void*) 0);
+        return 0;
     }
     
     // Allocate messageBody
@@ -529,9 +528,32 @@ void* serverHandleNewExecution(void *t) {
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
         perror("Server received wrong length of message body\n");
-        pthread_exit((void*) 0);;
+//        pthread_exit((void*) 0);
+        return 0;
     }
     printf("Received length of message body: %zd\n", receivedSize);
+    
+    // 2, Dispatch a new thread to handle procedure execution
+    threadArgs args;
+    args.messageBody = messageBody;
+    args.receivedSize = receivedSize;
+    args.messageLength = messageLength;
+    args.connectionSocket = connectionSocket;
+    
+    pthread_t newExecutionThread;
+    int threadCreatedResult = pthread_create(&newExecutionThread, NULL, serverHandleNewExecution, (void *)&args);
+    if (threadCreatedResult != 0) {
+        printf("Dispatch new execution thread failed: %d\n", threadCreatedResult);
+        return -1;
+    }
+    printf("Dispatch new execution thread succeed\n");
+    return 0;
+}
+
+void* serverHandleNewExecution(void *t) {
+    printf("New thread start\n");
+    threadArgs p_args = *(threadArgs *)t;
+    BYTE *messageBody = p_args.messageBody;
     
     // Message body: [name,argTypes,argsByte,]
     char *name = NULL;
@@ -544,7 +566,7 @@ void* serverHandleNewExecution(void *t) {
     enum messageType responseType = EXECUTE_SUCCESS;
     
     // Process message body, initialize ip, port, name, argTypes
-    for (int i = 0; i < receivedSize && responseType == EXECUTE_SUCCESS; i++) {
+    for (int i = 0; i < p_args.receivedSize && responseType == EXECUTE_SUCCESS; i++) {
         if (messageBody[i] == ',') {
             switch (messageCount) {
                 case 0: {
@@ -570,11 +592,12 @@ void* serverHandleNewExecution(void *t) {
                 default:
                     perror("Message Body Error\n");
                     //                    responseType = EXECUTE_FAILURE;
-                    serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+                    serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
                     free(name);
                     free(argTypes);
                     free(argsByte);
                     free(args);
+                    free(messageBody);
                     pthread_exit((void*) 0);;
                     break;
             }
@@ -599,11 +622,12 @@ void* serverHandleNewExecution(void *t) {
     if (argsByteToArgs(argTypes, argsByte, args)) {
         printf("args init succeed!\n");
     } else {
-        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
         free(name);
         free(argTypes);
         free(argsByte);
         free(args);
+        free(messageBody);
         pthread_exit((void*) 0);;
     }
     
@@ -621,17 +645,18 @@ void* serverHandleNewExecution(void *t) {
     if (executionResult < 0) {
         std::cerr << name <<" executes failed!\n";
         // Send EXECUTE_FAILURE
-        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
         // Free allocated varilables
         free(name);
         free(argTypes);
         free(argsByte);
         free(args);
+        free(messageBody);
         pthread_exit((void*) 0);;
     }
     printf("EXE succeed\n");
     // Send EXECUTE_SUCCESS
-    serverResponse(connectionSocket, EXECUTE_SUCCESS, 0);
+    serverResponse(p_args.connectionSocket, EXECUTE_SUCCESS, 0);
     
     //    printOutArgs(argTypes, args);
     
@@ -642,8 +667,8 @@ void* serverHandleNewExecution(void *t) {
     uint32_t sizeOfArgsByte = argsSize(argTypes);
     uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfArgsByte + 3;
     // Send back size should equal to messagelength
-    if (messageLength != totalSize) {
-        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
+    if (p_args.messageLength != totalSize) {
+        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
         pthread_exit((void*) 0);;
     }
     // Prepare messageBody
@@ -672,14 +697,15 @@ void* serverHandleNewExecution(void *t) {
     
     // Send execution result
     ssize_t operationResult = -1;
-    operationResult = send(connectionSocket, &messageBodyResponse, totalSize, 0);
+    operationResult = send(p_args.connectionSocket, &messageBodyResponse, totalSize, 0);
     if (operationResult != totalSize) {
         perror("Server to client: Send [name, argTypes, argsByte,] failed\n");
-        serverResponse(connectionSocket, EXECUTE_FAILURE, 0);
+        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, 0);
         free(name);
         free(argTypes);
         free(argsByte);
         free(args);
+        free(messageBody);
         pthread_exit((void*) 0);;
     }
     
@@ -688,6 +714,8 @@ void* serverHandleNewExecution(void *t) {
     free(argTypes);
     free(argsByte);
     free(args);
+    free(messageBody);
     
+    printf("New thread end\n");
     pthread_exit((void*) 0);;
 }
