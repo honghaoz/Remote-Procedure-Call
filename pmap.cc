@@ -71,6 +71,18 @@ bool isNameTypesEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     }
 }
 
+bool isNameTypesSocketEqual(P_NAME_TYPES_SOCKET k1, P_NAME_TYPES_SOCKET k2) {
+    P_NAME_TYPES nameTypesKey1 = k1.first;
+    int socketKey1 = k1.second;
+    P_NAME_TYPES nameTypesKey2 = k2.first;
+    int socketKey2 = k2.second;
+    if (isNameTypesEqual(nameTypesKey1, nameTypesKey2) && (socketKey1 == socketKey2)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 P_IP_PORT* pmap::findIp_client(P_NAME_TYPES key) {
     for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
