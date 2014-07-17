@@ -405,7 +405,8 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     // If message is correct, register, else free
     if (responseType == REGISTER_SUCCESS) {
         // Store this procedure in binder's data store
-        P_NAME_TYPES procedureKey(name, argTypes);
+        P_NAME_TYPES procedureNameTypes(name, argTypes);
+        P_NAME_TYPES_SOCKET procedureKey(procedureNameTypes, connectionSocket);
         P_IP_PORT ID(ipv4Address, portNumber);
         binderProcedureToID.insert(procedureKey, ID);
     } else  {
@@ -476,7 +477,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
 //    printf("\n");
     
     P_NAME_TYPES queryKey(name, argTypes);
-    P_IP_PORT *queryResult = binderProcedureToID.findIp(queryKey);
+    P_IP_PORT *queryResult = binderProcedureToID.findIp_client(queryKey);
     if (queryResult == NULL) {
         perror("Procedure Not found");
         binderResponse(connectionSocket, LOC_FAILURE, -1);
