@@ -81,7 +81,8 @@ int rpcBinderInit() {
     // Create socket
     binderListenSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (binderListenSocket == -1) {
-        perror("BINDER ERROR: Could not create socket\n");
+        fprintf(stderr, "BINDER ERROR: Could not create socket: %d\n", -2);
+//        perror("BINDER ERROR: Could not create socket\n");
         return -2; // ERROR -2: Binder create listen socket error
     }
     
@@ -99,7 +100,8 @@ int rpcBinderInit() {
     // Bind
     int bindResult = bind(binderListenSocket, (struct sockaddr *)&binder, sizeof(struct sockaddr_in));
     if(bindResult == -1) {
-        perror("BINDER ERROR: Listen socket bind failed\n");
+        fprintf(stderr, "BINDER ERROR: Listen socket bind failed: %d\n", -3);
+//        perror("BINDER ERROR: Listen socket bind failed\n");
         return -3; // ERROR -3: Binder listen socket bind failed
     }
     
@@ -109,7 +111,8 @@ int rpcBinderInit() {
     // Print out port number
     socklen_t addressLength = sizeof(binder);
     if (getsockname(binderListenSocket, (struct sockaddr*)&binder, &addressLength) == -1) {
-        perror("BINDER ERROR: Get port error\n");
+        fprintf(stderr, "BINDER ERROR: Get port error: %d\n", -4);
+//        perror("BINDER ERROR: Get port error\n");
         return -4; // ERROR -4: Binder get port number error
     }
     printf("BINDER_PORT %d\n", ntohs(binder.sin_port));
@@ -153,7 +156,8 @@ int rpcBinderListen() {
         //        timeout.tv_usec = 0;
         numberOfReadSockets = select(binderHighestSocket + 1, &binderSocketsFD, NULL, NULL, NULL);
         if (numberOfReadSockets < 0) {
-            perror("BINDER ERROR: Select error\n");
+            fprintf(stderr, "BINDER ERROR: Select error: %d\n", -1);
+//            perror("BINDER ERROR: Select error\n");
             return -1; // ERROR -1:
         }
         if (numberOfReadSockets > 0) {
@@ -214,7 +218,8 @@ int binderHandleNewConnection() {
     // Try to accept a new connection
     newSock = accept(binderListenSocket, (struct sockaddr *)&client, (socklen_t *)&addr_size);
     if (newSock < 0) {
-        perror("BINDER ERROR: Accept new connection failed\n");
+        fprintf(stderr, "BINDER ERROR: Accept new connection failed: %d\n", -2);
+//        perror("BINDER ERROR: Accept new connection failed\n");
         return -2; // ERROR -2: Accept new connection failed
     }
     // Add this new client to clients
@@ -227,7 +232,8 @@ int binderHandleNewConnection() {
         }
     }
     if (newSock != -1) {
-        perror("BINDER ERROR: No room left for new connection\n");
+        fprintf(stderr, "BINDER ERROR: No room left for new connection: %d\n", -3);
+//        perror("BINDER ERROR: No room left for new connection\n");
         close(newSock);
         return -3; // ERROR -3: No room left for new connection
     }
@@ -308,7 +314,8 @@ int binderDealWithData(int connectionNumber) {
         return BINDER_TERMINATE; // TERMINATE
     }
     else if (receivedSize != sizeof(uint32_t)) {
-        perror("BINDER ERROR: Message length error\n");
+        fprintf(stderr, "BINDER ERROR: Message length error: %d\n", -4);
+//        perror("BINDER ERROR: Message length error\n");
 //        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
         return -4; // ERROR -4:
     }
@@ -321,7 +328,8 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
-        perror("BINDER ERROR: Message type length error\n");
+        fprintf(stderr, "BINDER ERROR: Message type length error: %d\n", -5);
+//        perror("BINDER ERROR: Message type length error\n");
 //        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
         return -5; // ERROR -5
     } else { // Receive message length correctly
@@ -336,7 +344,8 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
-        perror("BINDER ERROR: Message body length error\n");
+        fprintf(stderr, "BINDER ERROR: Message body length error: %d\n", -6);
+//        perror("BINDER ERROR: Message body length error\n");
 //        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
         return -6; // ERROR -6
     }
@@ -364,7 +373,8 @@ int binderDealWithData(int connectionNumber) {
             break;
         }
         default:
-            perror("BINDER ERROR: Received unknown message type\n");
+            fprintf(stderr, "BINDER ERROR: Received unknown message type: %d\n", -7);
+//            perror("BINDER ERROR: Received unknown message type\n");
             if (messageBody != NULL) free(messageBody);
             return -7; // ERROR -7
             break;
@@ -393,7 +403,8 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("BINDER ERROR: Send response type failed\n");
+        fprintf(stderr, "BINDER ERROR: Send response type failed: %d\n", -8);
+//        perror("BINDER ERROR: Send response type failed\n");
         return -8; // ERROR -8
     }
     
@@ -401,7 +412,8 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
     operationResult = -1;
     operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("BINDER ERROR: Send response errorCode failed\n");
+        fprintf(stderr, "BINDER ERROR: Send response errorCode failed: %d\n", -9);
+//        perror("BINDER ERROR: Send response errorCode failed\n");
         return -9; // ERROR -9
     }
     //    printf("Binder responseType: %d, errorCode: %d\n", responseType, errorCode);
@@ -440,7 +452,8 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                         if (name != NULL) free(name);
                         if (argTypes != NULL) free(argTypes);
                         if (messageBody != NULL) free(messageBody);
-                        perror("BINDER ERROR: REGISTER Wrong IP size (>16)\n");// ERROR -10
+                        fprintf(stderr, "BINDER ERROR: REGISTER Wrong IP size (>16): %d\n", -10);
+//                        perror("BINDER ERROR: REGISTER Wrong IP size (>16)\n");// ERROR -10
                         return binderResponse(connectionSocket, REGISTER_FAILURE, -10);
                     }
 //                    printf("%d\n", sizeOfIp);
@@ -456,7 +469,8 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                         if (name != NULL) free(name);
                         if (argTypes != NULL) free(argTypes);
                         if (messageBody != NULL) free(messageBody);
-                        perror("BINDER ERROR: REGISTER Wrong port size (!= 4)\n");// ERROR -11
+                        fprintf(stderr, "BINDER ERROR: REGISTER Wrong port size (!= 4): %d\n", -11);
+//                        perror("BINDER ERROR: REGISTER Wrong port size (!= 4)\n");// ERROR -11
                         return binderResponse(connectionSocket, REGISTER_FAILURE, -11);
                     }
                     memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
@@ -479,7 +493,8 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
                     if (messageBody != NULL) free(messageBody);
-                    perror("BINDER ERROR: REGISTER Wrong message body\n");// ERROR -12
+                    fprintf(stderr, "BINDER ERROR: REGISTER Wrong message body: %d\n", -12);
+//                    perror("BINDER ERROR: REGISTER Wrong message body\n");// ERROR -12
                     return binderResponse(connectionSocket, REGISTER_FAILURE, -12);
                     break;
             }
@@ -542,7 +557,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
                     if (messageBody != NULL) free(messageBody);
-                    perror("BINDER ERROR: LOC Wrong message body\n");// ERROR -13
+                    fprintf(stderr, "BINDER ERROR: LOC Wrong message body: %d\n", -13);
+//                    perror("BINDER ERROR: LOC Wrong message body\n");// ERROR -13
                     return binderResponse(connectionSocket, LOC_FAILURE, -13);
                     break;
             }
@@ -558,7 +574,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (messageBody != NULL) free(messageBody);
-        perror("BINDER ERROR: LOC Procedure not found\n");// ERROR -14
+        fprintf(stderr, "BINDER ERROR: LOC Procedure not found: %d\n", -14);
+//        perror("BINDER ERROR: LOC Procedure not found\n");// ERROR -14
         return binderResponse(connectionSocket, LOC_FAILURE, -14);
     }
     ipv4Address = queryResult->first;
@@ -593,7 +610,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (messageBody != NULL) free(messageBody);
-        perror("BINDER ERROR: LOC Send IP+Port failed\n");// ERROR -15
+        fprintf(stderr, "BINDER ERROR: LOC Send IP+Port failed: %d\n", -15);
+//        perror("BINDER ERROR: LOC Send IP+Port failed\n");// ERROR -15
         return -15;
     }
 //    printf("Response located IP: %s\n", ipv4Address);
@@ -642,7 +660,8 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
                     if (messageBody != NULL) free(messageBody);
-                    perror("BINDER ERROR: LOC_CACHED Wrong message body\n");// ERROR -16
+                    fprintf(stderr, "BINDER ERROR: LOC_CACHED Wrong message body: %d\n", -16);
+//                    perror("BINDER ERROR: LOC_CACHED Wrong message body\n");// ERROR -16
                     return binderResponse(connectionSocket, LOC_CACHED_FAILURE, -16);
                     break;
             }
@@ -659,7 +678,8 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (messageBody != NULL) free(messageBody);
-        perror("BINDER ERROR: LOC_CACHED Procedure not found\n");// ERROR -17
+        fprintf(stderr, "BINDER ERROR: LOC_CACHED Procedure not found: %d\n", -17);
+//        perror("BINDER ERROR: LOC_CACHED Procedure not found\n");// ERROR -17
         return binderResponse(connectionSocket, LOC_CACHED_FAILURE, -17);
     }
     
@@ -690,7 +710,8 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (messageBody != NULL) free(messageBody);
-        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports length error\n");
+        fprintf(stderr, "BINDER ERROR: LOC_CACHED Send Ip+Ports length error: %d\n", -18);
+//        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports length error\n");
         return -18; // ERROR -18
     }
 //    printf("Binder cached call send message length succeed: %zd\n", operationResult);
@@ -702,7 +723,8 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (messageBody != NULL) free(messageBody);
-        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports body failed\n");
+        fprintf(stderr, "BINDER ERROR: LOC_CACHED Send Ip+Ports body failed: %d\n", -19);
+//        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports body failed\n");
         return -19; // ERROR -19
     }
 //    printf("Binder cached call send message body succeed: %zd\n", operationResult);
@@ -740,7 +762,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         ssize_t operationResult = -1;
         operationResult = send(eachServerSocket, &messageLength_network, sizeof(uint32_t), 0);
         if (operationResult != sizeof(uint32_t)) {
-            perror("BINDER ERROR: TERMINATE Send message to servers length error\n");
+            fprintf(stderr, "BINDER ERROR: TERMINATE Send message to servers length error: %d\n", -20);
+//            perror("BINDER ERROR: TERMINATE Send message to servers length error\n");
             return -20; // ERROR -20
         }
 //        printf("Binder sends termination message length succeed: %zd\n", operationResult);
@@ -749,7 +772,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         operationResult = -1;
         operationResult = send(eachServerSocket, &messageType_network, sizeof(uint32_t), 0);
         if (operationResult != sizeof(uint32_t)) {
-            perror("BINDER ERROR: TERMINATE Send message to servers type error\n");
+            fprintf(stderr, "BINDER ERROR: TERMINATE Send message to servers type error: %d\n", -21);
+//            perror("BINDER ERROR: TERMINATE Send message to servers type error\n");
             return -21; // ERROR -21
         }
 //        printf("Binder sends termination message type succeed: %zd\n", operationResult);
@@ -758,7 +782,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         operationResult = -1;
         operationResult = send(eachServerSocket, &messageBody, messageLength, 0);
         if (operationResult != messageLength) {
-            perror("BINDER ERROR: TERMINATE Send message to servers body error\n");
+            fprintf(stderr, "BINDER ERROR: TERMINATE Send message to servers body error: %d\n", -22);
+//            perror("BINDER ERROR: TERMINATE Send message to servers body error\n");
             return -22; // ERROR -22
         }
 //        printf("Binder sends termination message body succeed: %zd\n", operationResult);
