@@ -11,6 +11,7 @@
 using namespace std;
 
 #include "rpc.h"
+#include "rpc_extend.h"
 
 int main()
 {

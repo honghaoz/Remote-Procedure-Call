@@ -8,6 +8,7 @@
 
 #include "pmap.h"
 #include "rpc.h"
+#include "rpc_extend.h"
 #include <string>
 #include <stdlib.h>
 #include <string.h>
