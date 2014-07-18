@@ -66,26 +66,28 @@ int Connection(const char* hostname, const char* portnumber){
 int ConnectToBinder(){
     int socketfd = -1;
         //connect to binder
-#warning Need to change to dynamic address
-        std::string name = "127.0.0.1";
-        const char* host = name.c_str();//getenv("BINDER_ADDRESS");//get the server hostname from env
-        if(host == NULL){
-            std::cerr<<"CLIENT ERROR: binder host is null"<<std::endl;
-            return -71;
-        }
-        std::string p = "8888";
-        const char* portnum = p.c_str();//getenv("BINDER_PORT");//get the server socket port from env
-        if(portnum == NULL){
-            std::cerr<<"CLIENT ERROR: binder port number is NULL!"<<std::endl;
-            return -72;
-        }
-        socketfd = Connection(host, portnum);
+//#warning Need to change to dynamic address
+//        std::string name = "127.0.0.1";
+//        const char* host = name.c_str();//getenv("BINDER_ADDRESS");//get the server hostname from env
+    const char* host = getenv("BINDER_ADDRESS");
+    if(host == NULL){
+        std::cerr<<"CLIENT ERROR: binder host is null"<<std::endl;
+        return -71;
+    }
+//        std::string p = "8888";
+//        const char* portnum = p.c_str();//getenv("BINDER_PORT");//get the server socket port from env
+    const char* portnum = getenv("BINDER_PORT");//get the server socket port from env
+    if(portnum == NULL){
+        std::cerr<<"CLIENT ERROR: binder port number is NULL!"<<std::endl;
+        return -72;
+    }
+    socketfd = Connection(host, portnum);
 //        std::cout<<"new socket fd with binder is: "<<socketfd<<std::endl;
-        if(socketfd < 0){
-            std::cerr<<"CLIENT ERROR: wrong socket identifier!"<<std::endl;
-            return -73;
-        }
-        return socketfd;
+    if(socketfd < 0){
+        std::cerr<<"CLIENT ERROR: wrong socket identifier!"<<std::endl;
+        return -73;
+    }
+    return socketfd;
 }
 
 

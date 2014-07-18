@@ -59,7 +59,7 @@ struct threadArgs {
 
 #define SERVER_TERMINATE 999
 
-#pragma mark - rpcInit()
+//#pragma mark - rpcInit()
 /************************* rpcInit() *************************
  *
  *  1,  Set up server listen sockets for clients
@@ -183,10 +183,12 @@ int serverToBinderInit() {
     
     struct sockaddr_in serverToBinder;
     // Set address
-#warning Need to change to dynamic address
-    serverToBinder.sin_addr.s_addr = inet_addr("127.0.0.1");//getenv("BINDER_ADDRESS"));
+//#warning Need to change to dynamic address
+//    serverToBinder.sin_addr.s_addr = inet_addr("127.0.0.1");//getenv("BINDER_ADDRESS"));
+    serverToBinder.sin_addr.s_addr = inet_addr(getenv("BINDER_ADDRESS"));
     serverToBinder.sin_family = AF_INET;
-    serverToBinder.sin_port = htons(8888);//htons(atoi(getenv("BINDER_PORT")));
+//    serverToBinder.sin_port = htons(8888);//htons(atoi(getenv("BINDER_PORT")));
+    serverToBinder.sin_port = htons(atoi(getenv("BINDER_PORT")));
     
     
     // Connect
@@ -212,7 +214,8 @@ int serverToBinderInit() {
 
 
 
-#pragma mark - rpcRegister()
+
+//#pragma mark - rpcRegister()
 int serverHandleRegisterResponse(int connectionSocket);
 
 /******** rpcRegister(char* name, int* argTypes, skeleton f) **********
@@ -354,7 +357,7 @@ int serverHandleRegisterResponse(int connectionSocket) {
 
 
 
-#pragma mark - rpcExecute()
+//#pragma mark - rpcExecute()
 /************************ rpcExecute() **************************
  *  
  *  1, Handle client calls. Receive data from clients
@@ -397,6 +400,7 @@ int rpcExecute() {
             }
         }
     }
+    pthread_exit((void *) 0);
     close(serverForClientSocket);
     printf("Server terminated\n");
     return 0;
@@ -592,6 +596,11 @@ int serverDealWithData(int connectionNumber) {
     args.messageLength = messageLength;
     args.connectionSocket = connectionSocket;
     
+    pthread_mutex_init(&mutex, NULL);
+    pthread_attr_t thread_attr;
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
+    
     pthread_t newExecutionThread;
     int threadCreatedResult = pthread_create(&newExecutionThread, NULL, serverHandleNewExecution, (void *)&args);
     if (threadCreatedResult != 0) {
@@ -601,6 +610,8 @@ int serverDealWithData(int connectionNumber) {
         return serverResponse(connectionSocket, EXECUTE_FAILURE, -52); //Error -52
 //        return -1;
     }
+    pthread_join(newExecutionThread, NULL);
+    
 //    printf("Dispatch new execution thread succeed\n");
     return 0;
 }

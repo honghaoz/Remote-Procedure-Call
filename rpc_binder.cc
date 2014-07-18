@@ -37,7 +37,7 @@ int binderHighestSocket; // Highest # of socket file descriptor
 pmap binderProcedureToID;
 #define BINDER_TERMINATE 999
 
-#pragma mark - rpcBinderInit()
+//#pragma mark - rpcBinderInit()
 /********************** rpcBinderInit() *************************
  *
  *  1, Create binder socket for server and client, and listen it
@@ -95,8 +95,9 @@ int rpcBinderInit() {
     memset(&binder, 0, sizeof(struct sockaddr_in));
     binder.sin_family = AF_INET;
     binder.sin_addr.s_addr = htonl(INADDR_ANY);
-#warning Need to change to dynamic port number
-    binder.sin_port = htons(8888);//htons(0);
+//#warning Need to change to dynamic port number
+//    binder.sin_port = htons(8888);//htons(0);
+    binder.sin_port = htons(0);
     
     // Bind
     int bindResult = bind(binderListenSocket, (struct sockaddr *)&binder, sizeof(struct sockaddr_in));
@@ -129,7 +130,7 @@ int rpcBinderInit() {
 
 
 
-#pragma mark - rpcBinderListen()
+//#pragma mark - rpcBinderListen()
 /********************** rpcBinderListen() *************************
  *
  *  1, Handle message from server and client

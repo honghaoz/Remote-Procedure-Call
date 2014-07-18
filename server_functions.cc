@@ -7,6 +7,7 @@
 /* return: OUT; a, b: IN */
 int f0(int a, int b) {
   return a + b;
+    sleep(10);
 }
 
 
@@ -34,7 +35,7 @@ char* f2(float a, double b) {
   str1 = (char *)malloc(100);
 
   sprintf(str1, "%lld%lld", (long long)ai, (long long)bi);
-
+    sleep(10);
   return str1;
 }
 

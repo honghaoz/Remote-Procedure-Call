@@ -209,7 +209,7 @@ int pmap::insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value) {
     }
 }
 
-#pragma mark - used for rpc_server
+//#pragma mark - used for rpc_server
 
 /**
  *  Server register new procedure with this procedure's skeleton
@@ -242,7 +242,7 @@ int pmap::insert(P_NAME_TYPES key, skeleton value) {
     }
 }
 
-#pragma mark - used for rpc_client
+//#pragma mark - used for rpc_client
 
 P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
     P_IP_PORT* IpAndPort = NULL;

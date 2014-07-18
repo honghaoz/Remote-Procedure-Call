@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     status = rpcInit();
     if (status < 0) {
         perror("rpcInit() failed");
-//        exit(EXIT_FAILURE);
+        exit(status);
     }
     printf("rpcInit() succeed!\n");
 
