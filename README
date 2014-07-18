@@ -1,5 +1,3 @@
-CS 454 Assignment 3
-
 Instructions for program
 
 Commands:
@@ -46,19 +44,14 @@ Instruction to run program:
 Executable files:
 	After make, you will get librpc.a
 
-undergrad machine tested on:
-			ubuntu1204-002.student.cs.uwaterloo.ca (sometimes cannot get a real ip)
-			ubuntu1204-004.student.cs.uwaterloo.ca
-			ubuntu1204-006.student.cs.uwaterloo.ca
-
 Version of makefile:
 			GNU Make 3.81
 
 Version of c++ compiler:
 			gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5)
-Group member
-		Chao Chen (c99chen)
-		Honghao Zhang (h344zhan)
+Contributor
+			Chao Chen (c99chen)
+			Honghao Zhang (h344zhan)
 
 
 
