@@ -151,7 +151,7 @@ uint32_t argSize(uint32_t argInteger) {
             return sizeof(float);
             break;
         default:
-            perror("Arg type error!\n");
+//            perror("Arg type error!\n");
             return 0;
             break;
     }
@@ -173,7 +173,11 @@ uint32_t argsSize(int *argTypes) {
         if (lengthOfArray == 0) {
             lengthOfArray = 1;
         }
-        result += lengthOfArray * argSize(argTypes[i]);
+        uint32_t eachArgSize = argSize(argTypes[i]);
+        if (!(eachArgSize > 0)) {
+            return 0;
+        }
+        result += lengthOfArray * eachArgSize;
     }
     return result;
 }
@@ -237,7 +241,8 @@ bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args) {
                 break;
             }
             default:
-                perror("Arg type error \n");
+                fprintf(stderr, "Reading Args has type error: %d \n", -101);
+//                perror("Reading Args has type error \n");
                 return false;
                 break;
         }

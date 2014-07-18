@@ -616,7 +616,17 @@ void* serverHandleNewExecution(void *t) {
                 case 2: {
                     uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
 //                    printf("Expected: %d, Actual: %d\n", argsSize(argTypes), sizeOfArgsByte);
-                    if (sizeOfArgsByte != argsSize(argTypes)) {
+                    uint32_t supposedSizeOfArgsByte = argsSize(argTypes);
+                    if (supposedSizeOfArgsByte == 0) {
+                        if (name != NULL) free(name);
+                        if (argTypes != NULL) free(argTypes);
+                        if (messageBody != NULL) free(messageBody);
+                        fprintf(stderr, "SERVER ERROR: EXECUTE arg type error: %d\n", -101);
+//                        perror("SERVER ERROR: EXECUTE argTypes size error\n");
+                        serverResponse(connectionSocket, EXECUTE_FAILURE, -101); //Error -101
+                        pthread_exit((void*) 0);
+                    }
+                    if (sizeOfArgsByte != supposedSizeOfArgsByte) {
                         if (name != NULL) free(name);
                         if (argTypes != NULL) free(argTypes);
                         if (messageBody != NULL) free(messageBody);
@@ -706,6 +716,12 @@ void* serverHandleNewExecution(void *t) {
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
     uint32_t sizeOfArgTypes = argTypesLength(argTypes) * sizeof(int);
     uint32_t sizeOfArgsByte = argsSize(argTypes);
+    if (sizeOfArgsByte == 0) {
+        fprintf(stderr, "SERVER ERROR: EXECUTE arg type error: %d\n", -101);
+        //                        perror("SERVER ERROR: EXECUTE argTypes size error\n");
+//        serverResponse(connectionSocket, EXECUTE_FAILURE, -101); //Error -101
+        pthread_exit((void*) 0);
+    }
     uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfArgsByte + 3;
     // Send back size should equal to messagelength
     if (p_args.messageLength != totalSize) {
@@ -736,7 +752,18 @@ void* serverHandleNewExecution(void *t) {
         if (lengthOfArray == 0) {
             lengthOfArray = 1;
         }
-        uint32_t copySize = lengthOfArray * argSize(argTypes[i]);
+        uint32_t eachArgSize = argSize(argTypes[i]);
+        if (!(eachArgSize > 0)) {
+            if (name != NULL) free(name);
+            if (argTypes != NULL) free(argTypes);
+            if (argsByte != NULL) free(argsByte);
+            if (args != NULL) free(args);
+            if (messageBody != NULL) free(messageBody);
+            fprintf(stderr, "SERVER ERROR: EXECUTE Send back execution message, wrong argType failed: %d\n", -101);
+//            perror("SERVER ERROR: EXECUTE Send back execution message, wrong argType failed\n");
+            pthread_exit((void*) 0);
+        }
+        uint32_t copySize = lengthOfArray * eachArgSize;
         memcpy(messageBodyResponse + offset, args[i], copySize);
         offset += copySize;
     }

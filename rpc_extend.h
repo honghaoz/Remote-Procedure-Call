@@ -46,7 +46,7 @@ int ArrayLenght = eachArgType & ARG_ARRAY_LENGTH_MASK; \
         args[argIndex] = (void *)vars; \
         offset += varsSize; \
     } else { \
-        perror("ARG_LENGTH error\n"); \
+        fprintf(stderr, "Arg array length error: %d\n", -102); \
     }
 
 // Helper functions:
