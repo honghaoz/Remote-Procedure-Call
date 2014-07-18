@@ -34,7 +34,10 @@ enum messageType{
     EXECUTE = 7,
     EXECUTE_SUCCESS = 8,
     EXECUTE_FAILURE = 9,
-    TERMINATE = 10
+    TERMINATE = 10,
+    LOC_CACHED_REQUEST = 11,
+    LOC_CACHED_SUCCESS,
+    LOC_CACHED_FAILURE
 };
 
 #define BYTE uint8_t
