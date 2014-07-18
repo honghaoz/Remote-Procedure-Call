@@ -1,16 +1,12 @@
-all: Client Server Binder
+CXX = g++
 
-Client:
-	g++ -Wall -o client1 client1.cc rpc_helper.cc rpc_client.cc pmap.cc
-	g++ -Wall -o client2 client2.cc rpc_helper.cc rpc_client.cc pmap.cc
-	g++ -Wall -o client_cacheCall client_cacheCall.cc rpc_helper.cc rpc_client.cc pmap.cc
+###############################################
+.PHONY : all clean
 
-Server:
-	g++ -Wall -o server server.cc server_functions.cc server_function_skels.cc rpc_helper.cc pmap.cc rpc_server.cc -lpthread
-	g++ -Wall -o server2 server2.cc server_functions.cc server_function_skels.cc rpc_helper.cc pmap.cc rpc_server.cc -lpthread
-	g++ -Wall -o server3 server3.cc server_functions.cc server_function_skels.cc rpc_helper.cc pmap.cc rpc_server.cc -lpthread
-	g++ -Wall -o server4 server4.cc server_functions.cc server_function_skels.cc rpc_helper.cc pmap.cc rpc_server.cc -lpthread
+all: 
+	${CXX} -c binder.cc rpc_helper.cc rpc_binder.cc pmap.cc rpc_client.cc rpc_server.cc
+	${CXX} -o binder binder.o rpc_helper.o rpc_binder.o rpc_client.o rpc_server.o pmap.o
+	ar rcs librpc.a rpc_helper.o rpc_binder.o pmap.o rpc_client.o rpc_server.o
 
-	
-Binder:
-	g++ -Wall -o binder binder.cc rpc_helper.cc rpc_binder.cc pmap.cc
+clean:
+	rm -f *.d *.o ${EXECS}
