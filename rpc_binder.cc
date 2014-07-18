@@ -255,6 +255,7 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
 // Binder deal with three different message: Register, Locate and Terminate
 int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
 int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
+int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber);
 
 // Receive message length, message type and allocate message body
@@ -278,6 +279,7 @@ int binderDealWithData(int connectionNumber) {
         
         // Set this place to be available
         binderConnections[connectionNumber] = 0;
+        // Check whether there is active connections
         for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
             if (binderConnections[i] != 0) {
                 return 0;
@@ -301,7 +303,7 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("Binder received wrong length of message type\n");
-        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
+//        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
         return -1;
 //        return 0;
     } else { // Receive message length correctly
@@ -337,6 +339,11 @@ int binderDealWithData(int connectionNumber) {
         case TERMINATE: {
             printf("\n******************* NEW TERMINATE *******************\n");
             return binderDealWithTerminateMessage(connectionSocket, messageBody, receivedSize, connectionNumber);
+            break;
+        }
+        case LOC_CACHED_REQUEST: {
+            printf("\n***************** NEW CACHED LOCATE *******************\n");
+            return binderDealWithCachedLocateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         default:
@@ -539,6 +546,101 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     if (argTypes != NULL) free(argTypes);
     return 0;
 }
+
+int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
+    // Message body: [name,argTypes,]
+    char *name = NULL;
+    int *argTypes = NULL;
+#warning meeeeee
+    char *ipv4Address = NULL;
+    int portNumber = 0;
+    
+    int lastSeperatorIndex = -1;
+    int messageCount = 0;
+    
+    // Process message body, initialize ip, port, name, argTypes
+    for (int i = 0; i < messageBodySize; i++) {
+        if (messageBody[i] == ',') {
+            switch (messageCount) {
+                case 0: {
+                    uint32_t sizeOfName = i - (lastSeperatorIndex + 1);// get the size of function name
+                    name = (char *)malloc(sizeof(char) * sizeOfName);
+                    memcpy(name, messageBody + lastSeperatorIndex + 1, sizeOfName);// get the name of function
+                    break;
+                }
+                case 1: {
+                    uint32_t sizeOfArgTypes = i - (lastSeperatorIndex + 1);// get the size of function arg type
+                    argTypes = (int *)malloc(sizeof(BYTE) * sizeOfArgTypes);
+                    memcpy(argTypes, messageBody + lastSeperatorIndex + 1, sizeOfArgTypes);// get the arg Type
+                    break;
+                }
+                default:
+                    perror("Message Body Error\n");
+                    //                    responseType = LOC_FAILURE;
+                    binderResponse(connectionSocket, LOC_FAILURE, -1);
+                    if (name != NULL) free(name);
+                    if (argTypes != NULL) free(argTypes);
+                    return -1;
+                    break;
+            }
+            lastSeperatorIndex = i;
+            messageCount++;
+        }
+    }
+    
+    P_NAME_TYPES queryKey(name, argTypes);
+
+    std::vector<P_IP_PORT> queryResult = binderProcedureToID.findIpList_client(queryKey);
+    // If no any ip/port found
+    if (queryResult.size() == 0) {
+        perror("Procedure Not found");
+        binderResponse(connectionSocket, LOC_CACHED_FAILURE, -1);
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        //        return 0;
+        return -1;
+    }
+    
+    // Send back founded IP/Ports
+    // queryResult contains a list of ip/ports
+    ssize_t numberOfIpPorts = queryResult.size();
+    binderResponse(connectionSocket, LOC_CACHED_SUCCESS, 0);
+    
+    // Prepare messageLength
+    uint32_t messageLength = (uint32_t)numberOfIpPorts * (16 + sizeof(uint32_t)); // 16bytes for ip, 4 byte for portNumber
+    uint32_t messageLength_network = htonl(messageLength);
+    
+    // Prepare messageBody [length|IP1PORT1 IP2PORT2...]
+    BYTE messageBodyResponse[messageLength];
+    int offset = 0;
+    for (int i = 0; i < numberOfIpPorts; i++) {
+        // Copy each Ip + port
+        P_IP_PORT eachIpPort = queryResult.at(i);
+        memcpy(messageBodyResponse + offset, eachIpPort.first, 16);
+        offset += 16;
+        memcpy(messageBodyResponse + offset, &eachIpPort.second, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+    // Send message length (4 bytes)
+    ssize_t operationResult = -1;
+    operationResult = send(connectionSocket, &messageLength_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Binder cached call response to client: Send message length failed\n");
+        return -1;
+    }
+    printf("Binder cached call send message length succeed: %zd\n", operationResult);
+    
+    // Send message body (varied bytes)
+    operationResult = -1;
+    operationResult = send(connectionSocket, &messageBodyResponse, messageLength, 0);
+    if (operationResult != messageLength) {
+        perror("Binder cached call response to binder: Send message body failed\n");
+        return -1;
+    }
+    printf("Binder cached call send message body succeed: %zd\n", operationResult);
+    return 0;
+}
+
 
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber) {
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {

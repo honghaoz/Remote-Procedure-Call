@@ -97,6 +97,28 @@ P_IP_PORT* pmap::findIp_client(P_NAME_TYPES key) {
     return IpAndPort;
 }
 
+/**
+ *  Get a list of ip/port that have registered with key (name, types)
+ *
+ *  @param key P_NAME_TYPES, procedure to be found
+ *
+ *  @return vector<P_IP_PORT>, a list of found ip/ports
+ */
+std::vector<P_IP_PORT> pmap::findIpList_client(P_NAME_TYPES key) {
+    std::vector<P_IP_PORT> ipPorts;
+    for (std::vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++) {
+        // Get each name type
+        P_NAME_TYPES eachNameTypes = it->first.first;
+        // Get the ip/port for each name type
+        P_IP_PORT eachIpPort = it->second;
+        // If queried key is equal to each name type(key), add to ipPorts
+        if (isNameTypesEqual(eachNameTypes, key)) {
+            ipPorts.push_back(eachIpPort);
+        }
+    }
+    return ipPorts;
+}
+
 skeleton pmap::findSkeleton(P_NAME_TYPES key) {
     for (std::vector<P_MAP_SKELETON>::iterator it = vecSkeleton.begin(); it != vecSkeleton.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
