@@ -42,7 +42,9 @@ public:
     int insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value); // rpcBinder register
     int insert(P_NAME_TYPES key, skeleton value); //  rpcServer register
     int insert(P_NAME_TYPES key, P_IP_PORT value);
-    void clear_vecIpForCached(P_NAME_TYPES key, P_IP_PORT value);
+    void clear_vecIpForCached(P_NAME_TYPES key);
+    bool isIpPortEqual(P_IP_PORT k1, P_IP_PORT k2);
+    void free_P_IP_PORT(P_IP_PORT ip);
     pmap();
     ~pmap();
 };

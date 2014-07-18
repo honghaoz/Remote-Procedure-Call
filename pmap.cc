@@ -75,7 +75,7 @@ bool isNameTypesSocketEqual(P_NAME_TYPES_SOCKET k1, P_NAME_TYPES_SOCKET k2) {
     }
 }
 
-bool isIpPortEqual(P_IP_PORT k1, P_IP_PORT k2) {
+bool pmap::isIpPortEqual(P_IP_PORT k1, P_IP_PORT k2) {
     if(k1.first == NULL || k2.first == NULL){
         return false;
     }
@@ -311,13 +311,17 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
     }
 }
 
-void pmap::clear_vecIpForCached(P_NAME_TYPES key, P_IP_PORT value){
+void pmap::clear_vecIpForCached(P_NAME_TYPES key){
     for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
             P_NAME_TYPES existedKey = it->first;
             if (isNameTypesEqual(key, existedKey)){
                 vecIpForCached.erase(it);
             }
     }
+}
+
+void free_P_IP_PORT(P_IP_PORT ip){
+    //to free char* in pair
 }
 
 pmap::~pmap() {
