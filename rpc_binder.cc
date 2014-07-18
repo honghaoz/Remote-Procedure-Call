@@ -56,8 +56,8 @@ int rpcBinderInit() {
     char hostname[128];
     gethostname(hostname, sizeof(hostname));
     if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-        return -1;
+        fprintf(stderr, "BINDER: Get addr info error: %s\n", gai_strerror(status));
+        return -1; // ERROR -1: Get addr info error
     }
     
     for(p = res; p != NULL; p = p->ai_next) {
@@ -76,8 +76,8 @@ int rpcBinderInit() {
     // Create socket
     binderListenSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (binderListenSocket == -1) {
-        perror("Could not create socket\n");
-        return -1;
+        perror("BINDER: Could not create socket\n");
+        return -2; // ERROR -2: Binder create listen socket error
     }
     
     int addr_size;
@@ -94,8 +94,8 @@ int rpcBinderInit() {
     // Bind
     int bindResult = bind(binderListenSocket, (struct sockaddr *)&binder, sizeof(struct sockaddr_in));
     if(bindResult == -1) {
-        perror("Bind failed");
-        return -1;
+        perror("BINDER: Listen socket bind failed\n");
+        return -3; // ERROR -3: Binder listen socket bind failed
     }
     
     // Listen
@@ -104,8 +104,8 @@ int rpcBinderInit() {
     // Print out port number
     socklen_t addressLength = sizeof(binder);
     if (getsockname(binderListenSocket, (struct sockaddr*)&binder, &addressLength) == -1) {
-        perror("Get port error");
-        return -1;
+        perror("BINDER: Get port error\n");
+        return -4; // ERROR -4: Binder get port number error
     }
     printf("BINDER_PORT %d\n", ntohs(binder.sin_port));
     
@@ -113,7 +113,7 @@ int rpcBinderInit() {
     binderHighestSocket = binderListenSocket;
     // Clear the clients
     memset((char *) &binderConnections, 0, sizeof(binderConnections));
-    return 0;
+    return 0; // SUCCESS 0: Binder init succeefully
 }
 
 
