@@ -38,21 +38,21 @@ int Connection(const char* hostname, const char* portnumber){
     status = getaddrinfo(hostname,portnumber, &host_info, &host_info_list);
     if(status){
         std::cerr<<"Cannot Get Address Information!"<<std::endl;
-        exit(-1);
+        return -1;
     }
     
     int socketfd;
     socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
     if(socketfd == -1){
         std::cerr<<"Socket Error"<<std::endl;
-        exit(-1);
+        return -1;
     }
     
     
     status = connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen);
     if(status == -1){
         std::cerr<<"connection error!"<<std::endl;
-        exit(-1);
+        return -1;
     }
     
     return socketfd;
@@ -67,19 +67,19 @@ int ConnectToBinder(){
         const char* host = name.c_str();//getenv("BINDER_ADDRESS");//get the server hostname from env
         if(host == NULL){
             std::cerr<<"host is null"<<std::endl;
-            exit(-1);
+            return -1;
         }
         std::string p = "8888";
         const char* portnum = p.c_str();//getenv("BINDER_PORT");//get the server socket port from env
         if(portnum == NULL){
             std::cerr<<"port number is NULL!"<<std::endl;
-            exit(-1);
+            return -1;
         }
         socketfd = Connection(host, portnum);
 //        std::cout<<"new socket fd with binder is: "<<socketfd<<std::endl;
         if(socketfd < 0){
             std::cerr<<"wrong socket identifier!"<<std::endl;
-            exit(-1);
+            return -1;;
         }
         return socketfd;
 }
@@ -181,7 +181,7 @@ int ConnectToServer(char* hostname, char* portnumber){
     sockfd = Connection(hostname, portnumber);
     if(sockfd < 0){
         std::cerr<<"wrong socket identifier!"<<std::endl;
-        exit(-1);
+        return -1;
     }
     return sockfd;
     
