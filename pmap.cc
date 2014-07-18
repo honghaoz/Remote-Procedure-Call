@@ -38,24 +38,20 @@ void processArgTypes(int* argTypes){
 
 
 bool isNameTypesEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
+    if(k1.first == NULL) return false;
     string k1Name(k1.first);
     int *k1Types = k1.second;
     int sizeofk1 = sizeof(int)*argTypesLength(k1Types);
     int *k1copy = (int*)malloc(sizeofk1);
     memcpy(k1copy,k1Types,sizeofk1);
-//    std::cout<<"argtypes before process"<<std::endl;
-//    printOutArgTypes(k1copy);
     processArgTypes(k1copy);
-//    std::cout<<"argtypes after process"<<std::endl;
-//    printOutArgTypes(k1copy);
-    
+    if(k2.first == NULL){ cout<<"k2 first is null"<<endl; return false;}
     string k2Name(k2.first);
     int *k2Types = k2.second;
     int sizeofk2 = sizeof(int)*argTypesLength(k2Types);
     int *k2copy = (int*)malloc(sizeofk2);
     memcpy(k2copy,k2Types,sizeofk2);
     processArgTypes(k2copy);
-    
     if ((k1Name == k2Name) && argTypesEqual(k1Types, k2Types)) {
         return true;
     } else {
@@ -286,7 +282,7 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
     }
     if(vecIpPort.size() == 0){
         vecIpPort.push_back(sentinel);
-        std::cout<<"pushed sentinel"<<std::endl;
+        //std::cout<<"pushed sentinel"<<std::endl;
     }
     if(newvalue){
         for(std::vector<P_IP_PORT>::iterator it2 = vecIpPort.begin(); it2 != vecIpPort.end(); it2++){
@@ -295,7 +291,7 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
                 break;
             }
         }
-        std::cout<<"insert port: "<<value.second<<std::endl;
+        //std::cout<<"insert port: "<<value.second<<std::endl;
     }
     
     P_MAP_WITHOUTSOCKET newKV = P_MAP_WITHOUTSOCKET(key, value);
@@ -313,11 +309,16 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
 }
 
 void pmap::clear_vecIpForCached(P_NAME_TYPES key){
-    for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
+    for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end();) {
             P_NAME_TYPES existedKey = it->first;
             if (isNameTypesEqual(key, existedKey)){
                 vecIpForCached.erase(it);
+                if(it == vecIpForCached.end()){
+                    break;
+                }
+                continue;
             }
+        it++;
     }
 }
 

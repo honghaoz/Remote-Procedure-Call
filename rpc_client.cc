@@ -346,6 +346,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     
     int response = 0;
     response = clientHandleResponse(sockfd);
+    std::cout<<"response code from server: "<<response<<std::endl;
     if(response == 0){
         //success
         // Allocate messageBody
@@ -640,9 +641,9 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
     const char* server_port = s.c_str();
     
     int server_sockfd;
-    //std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+    std::cout<<"New server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = Connection(server_host, server_port);
-    //std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
+    std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
     free(serverIpPort);
     serverIpPort = NULL;
     if(server_sockfd < 0){
@@ -748,15 +749,16 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     while(serverIpPort != NULL){
         int portnum = serverIpPort->second;
         char* server_host = serverIpPort->first;
-        std::ostringstream convert;
+        //std::cout<<"//////////////////"<<server_host<<std::endl;
+        std::stringstream convert;
         convert << portnum;
         std::string s = convert.str();
         const char* server_port = s.c_str();
         
         int server_sockfd;
-        //std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+        std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
         server_sockfd = Connection(server_host, server_port);
-        //std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
+        std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
         if(server_sockfd < 0){
             std::cerr<<"CLIENT ERROR: Server Connection Error Occur!"<<std::endl;
             return -1;
@@ -764,22 +766,28 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
 
         int reason = executeRequest(name, argTypes, args, server_sockfd);
         if(reason != 0){
-            close(server_sockfd);
+            //close(server_sockfd);
             if(serverIpPort != NULL){
                 free(serverIpPort);
                 serverIpPort = NULL;
             }
             serverIpPort = clientDataBase.findIp_cached(key);
             if(clientDataBase.isIpPortEqual(*serverIpPort, IpPort)){
+                std::cout<<"BREAK BREAK BREAK"<<std::endl;
                 clientDataBase.clear_vecIpForCached(key);
-                if(serverIpPort != NULL)
-                free(serverIpPort);
-                serverIpPort = NULL;
+                std::cout<<"BREAK BREAK BREAK"<<std::endl;
+                if(serverIpPort != NULL){
+                    free(serverIpPort);
+                    serverIpPort = NULL;
+                }
+                //close(server_sockfd);
+                std::cout<<"BREAK BREAK BREAK"<<std::endl;
                 break;
             }
+            std::cout<<"CONTINUE CONTINUE"<<std::endl;
             continue;
         }
-        close(server_sockfd);
+        //close(server_sockfd);
         return 0;
     }
     int binder_fd;
@@ -813,6 +821,7 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     }
     
     reasoncode = executeRequest(name, argTypes, args, server_sockfd);
+    
     if(reasoncode != 0){
         close(server_sockfd);
         return reasoncode;
