@@ -532,7 +532,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (messageBody != NULL) free(messageBody);
-        perror("BINDER ERROR: LOC Procedure Not found\n");// ERROR -14
+        perror("BINDER ERROR: LOC Procedure not found\n");// ERROR -14
         return binderResponse(connectionSocket, LOC_FAILURE, -14);
     }
     ipv4Address = queryResult->first;
@@ -583,9 +583,6 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
     // Message body: [name,argTypes,]
     char *name = NULL;
     int *argTypes = NULL;
-#warning meeeeee
-    char *ipv4Address = NULL;
-    int portNumber = 0;
     
     int lastSeperatorIndex = -1;
     int messageCount = 0;
@@ -607,12 +604,11 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
                     break;
                 }
                 default:
-                    perror("Message Body Error\n");
-                    //                    responseType = LOC_FAILURE;
-                    binderResponse(connectionSocket, LOC_FAILURE, -1);
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
-                    return -1;
+                    if (messageBody != NULL) free(messageBody);
+                    perror("BINDER ERROR: LOC_CACHED Wrong message body\n");// ERROR -16
+                    return binderResponse(connectionSocket, LOC_CACHED_FAILURE, -16);
                     break;
             }
             lastSeperatorIndex = i;
@@ -625,12 +621,11 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
     std::vector<P_IP_PORT> queryResult = binderProcedureToID.findIpList_client(queryKey);
     // If no any ip/port found
     if (queryResult.size() == 0) {
-        perror("Procedure Not found");
-        binderResponse(connectionSocket, LOC_CACHED_FAILURE, -1);
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
-        //        return 0;
-        return -1;
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC_CACHED Procedure not found\n");// ERROR -17
+        return binderResponse(connectionSocket, LOC_CACHED_FAILURE, -17);
     }
     
     // Send back founded IP/Ports
@@ -657,20 +652,26 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Binder cached call response to client: Send message length failed\n");
-        return -1;
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports length error\n");
+        return -18; // ERROR -18
     }
-    printf("Binder cached call send message length succeed: %zd\n", operationResult);
+//    printf("Binder cached call send message length succeed: %zd\n", operationResult);
     
     // Send message body (varied bytes)
     operationResult = -1;
     operationResult = send(connectionSocket, &messageBodyResponse, messageLength, 0);
     if (operationResult != messageLength) {
-        perror("Binder cached call response to binder: Send message body failed\n");
-        return -1;
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports body failed\n");
+        return -18; // ERROR -19
     }
-    printf("Binder cached call send message body succeed: %zd\n", operationResult);
-    return 0;
+//    printf("Binder cached call send message body succeed: %zd\n", operationResult);
+    return 0; //SUCCESS
 }
 
 
