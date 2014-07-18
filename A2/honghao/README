@@ -1,3 +1,0 @@
-SERVER_ADDRESS <machine name>
-* the <machine name> will be replaced with a IP(v4) address.
-* Sometimes the printed IP address is local address (127.0.1.1). For remote service, this local address will not work. Need to run server again until the public address is printed.
