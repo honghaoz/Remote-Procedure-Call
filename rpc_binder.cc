@@ -22,6 +22,7 @@
 #include "pmap.h"
 //using namespace std;
 
+#define IS_DEBUG false
 /******************* Binder Functions ****************
  *
  *  Description: Binder related functions
@@ -50,7 +51,7 @@ pmap binderProcedureToID;
  *  @return Binder init execution result
  */
 int rpcBinderInit() {
-    std::cout << "rpcBinderInit()" << std::endl;
+    if(IS_DEBUG) std::cout << "rpcBinderInit()" << std::endl;
     // Get IPv4 address for this host
     struct addrinfo hints, *res, *p;
     int status;
@@ -78,7 +79,6 @@ int rpcBinderInit() {
     }
     
     for(p = res; p != NULL; p = p->ai_next) {
-        printf("in loop\n");
         void *addr;
         if (p->ai_family == AF_INET) { // IPv4
             struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
@@ -167,7 +167,7 @@ int binderDealWithData(int connectionNumber);
  *  @return Binder listen execution result
  */
 int rpcBinderListen() {
-    std::cout << "rpcBinderListen()" << std::endl;
+    if(IS_DEBUG) std::cout << "rpcBinderListen()" << std::endl;
     
     int numberOfReadSockets; // Number of sockets ready for reading
     
@@ -202,7 +202,7 @@ int rpcBinderListen() {
     }
     
     close(binderListenSocket);
-//    printf("Binder terminated!\n");
+    if(IS_DEBUG) printf("Binder terminated!\n");
     return 0; // SUCCESS
 }
 
@@ -375,22 +375,22 @@ int binderDealWithData(int connectionNumber) {
     
     switch (messageType) {
         case REGISTER: {
-            printf("BINDER: Receive REGISTER\n");
+            if(IS_DEBUG) printf("BINDER: Receive REGISTER\n");
             return binderDealWithRegisterMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case LOC_REQUEST: {
-            printf("BINDER: Receive LOC_REQUEST\n");
+            if(IS_DEBUG) printf("BINDER: Receive LOC_REQUEST\n");
             return binderDealWithLocateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case TERMINATE: {
-            printf("BINDER: Receive TERMINATE\n");
+            if(IS_DEBUG) printf("BINDER: Receive TERMINATE\n");
             return binderDealWithTerminateMessage(connectionSocket, messageBody, receivedSize, connectionNumber);
             break;
         }
         case LOC_CACHED_REQUEST: {
-            printf("BINDER: Receive LOC_CACHED_REQUEST\n");
+            if(IS_DEBUG) printf("BINDER: Receive LOC_CACHED_REQUEST\n");
             return binderDealWithCachedLocateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
@@ -525,7 +525,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
         }
     }
     // Process completed
-    printf("    Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
+    if(IS_DEBUG) printf("    Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
     
     // If message is correct, register in local database
     P_NAME_TYPES procedureNameTypes(name, argTypes);
@@ -602,7 +602,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     }
     ipv4Address = queryResult->first;
     portNumber = queryResult->second;
-    printf("    Locate: %s, found IP: %s, Port: %d\n", name, ipv4Address, portNumber);
+    if(IS_DEBUG)  printf("    Locate: %s, found IP: %s, Port: %d\n", name, ipv4Address, portNumber);
     
     // Response LOC_SUCCESS
     binderResponse(connectionSocket, LOC_SUCCESS, 0);
