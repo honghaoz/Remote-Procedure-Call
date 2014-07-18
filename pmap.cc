@@ -60,12 +60,27 @@ bool isNameTypesEqual(P_NAME_TYPES k1, P_NAME_TYPES k2) {
     }
 }
 
+
 bool isNameTypesSocketEqual(P_NAME_TYPES_SOCKET k1, P_NAME_TYPES_SOCKET k2) {
     P_NAME_TYPES nameTypesKey1 = k1.first;
     int socketKey1 = k1.second;
     P_NAME_TYPES nameTypesKey2 = k2.first;
     int socketKey2 = k2.second;
     if (isNameTypesEqual(nameTypesKey1, nameTypesKey2) && (socketKey1 == socketKey2)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool isIpPortEqual(P_IP_PORT k1, P_IP_PORT k2) {
+    string k1Ip(k1.first);
+    int k1Port = k1.second;
+    
+    string k2Ip(k2.first);
+    int k2Port = k2.second;
+    
+    if ((k1Ip == k2Ip) && (k1Port == k2Port)) {
         return true;
     } else {
         return false;
@@ -224,21 +239,29 @@ int pmap::insert(P_NAME_TYPES key, skeleton value) {
 #pragma mark - used for rpc_client
 
 P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
-    P_IP_PORT* IpAndPort = (P_IP_PORT*)malloc(sizeof(P_IP_PORT));
-    for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
-        P_NAME_TYPES existedKey = it->first;
-        if (isNameTypesEqual(key, existedKey)){
-            *IpAndPort = it->second;
-            P_MAP_WITHOUTSOCKET temp = *it;
-            vecIpForCached.erase(it);
-            vecIpForCached.push_back(temp);
-            break;
+    P_IP_PORT* IpAndPort = NULL;
+    
+    for(std::vector<P_IP_PORT>::iterator itIp = vecIpPort.begin(); itIp != vecIpPort.end(); itIp++){
+        for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
+            P_NAME_TYPES existedKey = it->first;
+            if (isNameTypesEqual(key, existedKey) && isIpPortEqual(it->second, *itIp)){
+                if(IpAndPort == NULL){
+                    IpAndPort = (P_IP_PORT*)malloc(sizeof(P_IP_PORT));
+                }
+                *IpAndPort = it->second;
+                P_IP_PORT temp = *itIp;
+                vecIpPort.erase(itIp);
+                vecIpPort.push_back(temp);
+                break;
+            }
         }
     }
+    
     return IpAndPort;
 }
 
 int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
+    bool newvalue = true;
     std::vector<P_MAP_WITHOUTSOCKET>::iterator KVFound = vecIpForCached.end();
     for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
@@ -247,7 +270,17 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
             break;
         }
     }
-    std::cout<<"insert port: "<<value.second<<std::endl;
+    for(std::vector<P_IP_PORT>::iterator it = vecIpPort.begin(); it != vecIpPort.end(); it++){
+        if(isIpPortEqual(value,*it)){
+            newvalue = false;
+            break;
+        }
+    }
+    if(newvalue){
+        vecIpPort.push_back(value);
+        std::cout<<"insert port: "<<value.second<<std::endl;
+    }
+    
     P_MAP_WITHOUTSOCKET newKV = P_MAP_WITHOUTSOCKET(key, value);
     // Not Found
     if (KVFound == vecIpForCached.end()) {
