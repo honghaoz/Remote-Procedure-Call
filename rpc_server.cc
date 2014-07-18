@@ -185,10 +185,20 @@ int serverToBinderInit() {
     // Set address
 //#warning Need to change to dynamic address
 //    serverToBinder.sin_addr.s_addr = inet_addr("127.0.0.1");//getenv("BINDER_ADDRESS"));
-    serverToBinder.sin_addr.s_addr = inet_addr(getenv("BINDER_ADDRESS"));
+    const char* binderIP = getenv("BINDER_ADDRESS");
+    if (binderIP == NULL) {
+        fprintf(stderr, "SERVER ERROR: Get BINDER_ADDRESS failed: %d\n", -151);
+        return -151;
+    }
+    serverToBinder.sin_addr.s_addr = inet_addr(binderIP);
     serverToBinder.sin_family = AF_INET;
 //    serverToBinder.sin_port = htons(8888);//htons(atoi(getenv("BINDER_PORT")));
-    serverToBinder.sin_port = htons(atoi(getenv("BINDER_PORT")));
+    const char *binderPort = getenv("BINDER_PORT");
+    if (binderPort == NULL) {
+        fprintf(stderr, "SERVER ERROR: Get BINDER_PORT failed: %d\n", -152);
+        return -152;
+    }
+    serverToBinder.sin_port = htons(atoi(binderPort));
     
     
     // Connect
