@@ -21,6 +21,8 @@
 #include "pmap.h"
 //using namespace std;
 
+#define DEBUG1 0
+
 pmap clientDataBase;
 
 
@@ -641,9 +643,13 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
     const char* server_port = s.c_str();
     
     int server_sockfd;
+#if DEBUG1
     std::cout<<"New server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+#endif
     server_sockfd = Connection(server_host, server_port);
+#if DEBUG1
     std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
+#endif
     free(serverIpPort);
     serverIpPort = NULL;
     if(server_sockfd < 0){
@@ -756,9 +762,13 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         const char* server_port = s.c_str();
         
         int server_sockfd;
+#if DEBUG1
         std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+#endif
         server_sockfd = Connection(server_host, server_port);
+#if DEBUG1
         std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
+#endif
         if(server_sockfd < 0){
             std::cerr<<"CLIENT ERROR: Server Connection Error Occur!"<<std::endl;
             return -1;
