@@ -583,7 +583,7 @@ int serverDealWithData(int connectionNumber) {
 }
 
 void* serverHandleNewExecution(void *t) {
-    printf("New thread start\n");
+//    printf("New thread start\n");
     threadArgs p_args = *(threadArgs *)t;
     BYTE *messageBody = p_args.messageBody;
     int connectionSocket = p_args.connectionSocket;
@@ -642,14 +642,14 @@ void* serverHandleNewExecution(void *t) {
         }
     }
     
-    printf("Execute Name: %s\n", name);
+    printf("Execute Procedure: %s\n", name);
     //    printf("Execute ArgTypes: ");
     //    for (int i = 0; i < argTypesLength(argTypes); i++) {
     //        printf("%s\n", u32ToBit(argTypes[i]));
     //    }
     //    printf("\n");
     
-    printOutArgsByte(argTypes, argsByte);
+//    printOutArgsByte(argTypes, argsByte);
     
     
     // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
@@ -666,7 +666,7 @@ void* serverHandleNewExecution(void *t) {
         pthread_exit((void*) 0);;
     }
     
-    printOutArgs(argTypes, args);
+//    printOutArgs(argTypes, args);
     
     P_NAME_TYPES queryKey(name, argTypes);
     
@@ -690,7 +690,7 @@ void* serverHandleNewExecution(void *t) {
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
-        perror("SERVER ERROR: EXECUTE Execute failed\n");
+        fprintf(stderr, "SERVER ERROR: EXECUTE Execute failed: %d\n", -57);
         serverResponse(connectionSocket, EXECUTE_FAILURE, -57); //Error -57
         pthread_exit((void*) 0);
     }
@@ -698,7 +698,7 @@ void* serverHandleNewExecution(void *t) {
     // Send EXECUTE_SUCCESS
     serverResponse(connectionSocket, EXECUTE_SUCCESS, executionResult);
     
-    printOutArgs(argTypes, args);
+//    printOutArgs(argTypes, args);
     
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
