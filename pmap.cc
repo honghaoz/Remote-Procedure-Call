@@ -224,7 +224,7 @@ int pmap::insert(P_NAME_TYPES key, skeleton value) {
 #pragma mark - used for rpc_client
 
 P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
-    P_IP_PORT* IpAndPort = NULL;
+    P_IP_PORT* IpAndPort = (P_IP_PORT*)malloc(sizeof(P_IP_PORT));
     for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
         if (isNameTypesEqual(key, existedKey)){
