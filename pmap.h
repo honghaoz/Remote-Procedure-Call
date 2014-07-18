@@ -20,14 +20,16 @@ typedef std::pair<P_NAME_TYPES, int> P_NAME_TYPES_SOCKET;
 
 // Values
 typedef std::pair<char *, int> P_IP_PORT;
-
+typedef std::pair<P_NAME_TYPES, P_IP_PORT> P_MAP_WITHOUTSOCKET;
 typedef std::pair<P_NAME_TYPES_SOCKET, P_IP_PORT> P_MAP_IP_PORT;
 typedef std::pair<P_NAME_TYPES, skeleton> P_MAP_SKELETON;
 
 class pmap {
     std::vector<P_MAP_IP_PORT> vecIp;
     std::vector<P_MAP_SKELETON> vecSkeleton;
+    std::vector<P_MAP_WITHOUTSOCKET> vecIpForCached;
     std::vector<int> vecSocket;
+    
     void addToVectorSocket(int newSocket);
     P_IP_PORT* findIP(P_NAME_TYPES key1, int key2);
 public:
