@@ -187,6 +187,8 @@ int pmap::insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value) {
     }
 }
 
+#pragma mark - used for rpc_server
+
 /**
  *  Server register new procedure with this procedure's skeleton
  *  rpcServer will call.
@@ -217,6 +219,48 @@ int pmap::insert(P_NAME_TYPES key, skeleton value) {
         return 1;
     }
 }
+
+#pragma mark - used for rpc_client
+
+P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
+    P_IP_PORT* IpAndPort = NULL;
+    for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
+        P_NAME_TYPES existedKey = it->first;
+        if (isNameTypesEqual(key, existedKey)){
+            IpAndPort = &(it->second);
+            P_MAP_WITHOUTSOCKET temp = *it;
+            vecIpForCached.erase(it);
+            vecIpForCached.push_back(temp);
+            break;
+        }
+    }
+    return IpAndPort;
+}
+
+int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
+    std::vector<P_MAP_WITHOUTSOCKET>::iterator KVFound = vecIpForCached.end();
+    for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
+        P_NAME_TYPES existedKey = it->first;
+        if (isNameTypesEqual(key, existedKey)) {
+            KVFound = it;
+            break;
+        }
+    }
+    P_MAP_WITHOUTSOCKET newKV = P_MAP_WITHOUTSOCKET(key, value);
+    // Not Found
+    if (KVFound == vecIpForCached.end()) {
+        vecIpForCached.push_back(newKV);
+        return 0;
+    }
+    // Found
+    else {
+        vecIpForCached.erase(KVFound);
+        vecIpForCached.push_back(newKV);
+        return 1;
+    }
+}
+
+
 
 pmap::~pmap() {
     vecIp.clear();

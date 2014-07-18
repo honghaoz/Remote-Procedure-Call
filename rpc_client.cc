@@ -17,7 +17,10 @@
 #include <math.h>
 #include <sstream>
 #include "rpc.h"
+#include "pmap.h"
 //using namespace std;
+
+pmap clientDataBase;
 
 
 /***************** connect *************************
@@ -609,17 +612,24 @@ int clientHandleBinderResponseForCachedCall(int connectionSocket) {
     }
 }
 
-int getServerSocket(int binder_fd){
+int getServerSocket(char* name, int* argTypes,int binder_fd){
     //get the ip and port from binder
+    P_NAME_TYPES newKey = P_NAME_TYPES(name,argTypes);
     ssize_t receivedSize = -1;
     uint32_t messageLength_network;
-    receivedSize = recv(binder_fd, &messageLength_network, sizeof(uint32_t), 0);\
+    receivedSize = recv(binder_fd, &messageLength_network, sizeof(uint32_t), 0);//receive length
     if (receivedSize == 0) {
         perror("Cached Call: received wrong message length\n");
         close(binder_fd);
         return -1;
     }
     uint32_t messageLength = ntohl(messageLength_network);
+    if(messageLength%20 != 0){
+        perror("The length from binder is correct\n");
+        return -1;
+    }
+    std::cout<<"the length of message is "<<messageLength<<std::endl;
+    
     BYTE* message_body = (BYTE *)malloc(sizeof(BYTE) * messageLength);
     receivedSize = recv(binder_fd,message_body , messageLength, 0);
     // Connection lost
@@ -634,12 +644,31 @@ int getServerSocket(int binder_fd){
         return -1;
     }
     else {
+        std::cout<<"received size is "<<receivedSize<<std::endl;
         close(binder_fd);
     }
-    char* server_host = (char*)malloc(sizeof(sizeof(char) * 16));
-    memcpy(server_host,message_body,16);
+    int NumOfServers = messageLength/20;
+    char* server_host = NULL;
     int portnum;
-    memcpy(&portnum, message_body+17, sizeof(int));
+    int offset = 0;
+    
+    std::cout<<"inserting server info "<<std::endl;
+    for(int i = 0; i < NumOfServers; i++){
+        server_host = (char*)malloc(sizeof(sizeof(char) * 16));
+        memcpy(server_host,message_body+offset,16);
+        offset += 16;
+        memcpy(&portnum, message_body+offset, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+        P_IP_PORT newIpPort = P_IP_PORT(server_host,portnum);
+        clientDataBase.insert(newKey, newIpPort);
+    }
+    
+    P_IP_PORT* serverIpPort = clientDataBase.findIp_cached(newKey);
+    if(serverIpPort == NULL){
+        perror("server Ip Port pair cannot be null!\n");
+        return -1;
+    }
+    portnum = serverIpPort->second;
     std::ostringstream convert;
     convert << portnum;
     std::string s = convert.str();
@@ -648,7 +677,7 @@ int getServerSocket(int binder_fd){
     int server_sockfd;
     //    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = Connection(server_host, server_port);
-    //    std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
+        std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
     if(server_sockfd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
         return -1;
@@ -714,7 +743,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
     char* server_host = (char*)malloc(sizeof(sizeof(char) * 16));
     memcpy(server_host,message_body,16);
     int portnum;
-    memcpy(&portnum, message_body+17, sizeof(int));
+    memcpy(&portnum, message_body+17, sizeof(int));//16 th is a seperator, so go from 17
     std::ostringstream convert;
     convert << portnum;
     std::string s = convert.str();
@@ -741,6 +770,37 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     std::cout<<std::endl;
     std::cout<<"***********************************"<<std::endl;
     std::cout << "rpcCacheCall(" << name << ")" << std::endl;
+    
+    P_NAME_TYPES key(name,argTypes);
+    P_IP_PORT* serverIpPort = NULL;
+    serverIpPort = clientDataBase.findIp_cached(key);
+    
+    if(serverIpPort != NULL){
+        int portnum = serverIpPort->second;
+        char* server_host = serverIpPort->first;
+        std::ostringstream convert;
+        convert << portnum;
+        std::string s = convert.str();
+        const char* server_port = s.c_str();
+        
+        int server_sockfd;
+        //    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+        server_sockfd = Connection(server_host, server_port);
+        std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
+        if(server_sockfd < 0){
+            std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
+            return -1;
+        }
+
+        int reason = executeRequest(name, argTypes, args, server_sockfd);
+        if(reason != 0){
+            close(server_sockfd);
+            return reason;
+        }
+        close(server_sockfd);
+        return 0;
+    }
+    
     int binder_fd;
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
@@ -748,12 +808,14 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         return -1;
     }
     
+    std::cout<<"send cache loc request\n"<<std::endl;
     int reasoncode = CachedLocationRequest(name, argTypes,binder_fd);
     if(reasoncode != 0){
         perror("CachedCall: failed to send location request to binder\n");
         return reasoncode;
     }
     
+    std::cout<<"waiting binder response\n"<<std::endl;
     reasoncode = clientHandleBinderResponseForCachedCall(binder_fd);
     if(reasoncode != 0){
         perror("CachedCall: failed to handle response from binder\n");
@@ -762,8 +824,8 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     
     int server_sockfd;
     //    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
-    server_sockfd = getServerSocket(binder_fd);
-    //    std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
+    server_sockfd = getServerSocket(name, argTypes,binder_fd);
+        std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
     if(server_sockfd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
         return -1;
@@ -775,10 +837,10 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         return reasoncode;
     }
     close(server_sockfd);
-    
-    
     return 0;
 }
+
+
 int rpcTerminate() {
     std::cout << "rpcTerminate()" << std::endl;
     int binder_fd;
