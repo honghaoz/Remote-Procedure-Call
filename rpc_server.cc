@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include "rpc.h"
+#include "rpc_extend.h"
 #include "pmap.h"
 //using namespace std;
 
