@@ -17,8 +17,9 @@ int main()
     int status = -1;
     status = rpcBinderInit();
     if (status < 0) {
-        exit(EXIT_FAILURE);
+        exit(status);
     }
-    rpcBinderListen();
-    return 0;
+    status = -1;
+    status = rpcBinderListen();
+    exit(status);
 }

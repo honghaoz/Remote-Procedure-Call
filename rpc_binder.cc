@@ -42,6 +42,11 @@ pmap binderProcedureToID;
  *  1, Create binder socket for server and client, and listen it
  *
  ****************************************************************/
+/**
+ *  Binder Init, create binder listen socket for servers and clients
+ *
+ *  @return Binder init execution result
+ */
 int rpcBinderInit() {
     std::cout << "rpcBinderInit()" << std::endl;
     // Get IPv4 address for this host
@@ -56,7 +61,7 @@ int rpcBinderInit() {
     char hostname[128];
     gethostname(hostname, sizeof(hostname));
     if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0) {
-        fprintf(stderr, "BINDER: Get addr info error: %s\n", gai_strerror(status));
+        fprintf(stderr, "BINDER ERROR: Get addr info error: %s\n", gai_strerror(status));
         return -1; // ERROR -1: Get addr info error
     }
     
@@ -76,7 +81,7 @@ int rpcBinderInit() {
     // Create socket
     binderListenSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (binderListenSocket == -1) {
-        perror("BINDER: Could not create socket\n");
+        perror("BINDER ERROR: Could not create socket\n");
         return -2; // ERROR -2: Binder create listen socket error
     }
     
@@ -94,7 +99,7 @@ int rpcBinderInit() {
     // Bind
     int bindResult = bind(binderListenSocket, (struct sockaddr *)&binder, sizeof(struct sockaddr_in));
     if(bindResult == -1) {
-        perror("BINDER: Listen socket bind failed\n");
+        perror("BINDER ERROR: Listen socket bind failed\n");
         return -3; // ERROR -3: Binder listen socket bind failed
     }
     
@@ -104,7 +109,7 @@ int rpcBinderInit() {
     // Print out port number
     socklen_t addressLength = sizeof(binder);
     if (getsockname(binderListenSocket, (struct sockaddr*)&binder, &addressLength) == -1) {
-        perror("BINDER: Get port error\n");
+        perror("BINDER ERROR: Get port error\n");
         return -4; // ERROR -4: Binder get port number error
     }
     printf("BINDER_PORT %d\n", ntohs(binder.sin_port));
@@ -131,6 +136,11 @@ int binderReadSockets();
 int binderHandleNewConnection();
 int binderDealWithData(int connectionNumber);
 
+/**
+ *  Binder listen for all incoming message
+ *
+ *  @return Binder listen execution result
+ */
 int rpcBinderListen() {
     std::cout << "rpcBinderListen()" << std::endl;
     
@@ -143,22 +153,36 @@ int rpcBinderListen() {
         //        timeout.tv_usec = 0;
         numberOfReadSockets = select(binderHighestSocket + 1, &binderSocketsFD, NULL, NULL, NULL);
         if (numberOfReadSockets < 0) {
-            perror("Select error");
-            return -1;
+            perror("BINDER ERROR: Select error\n");
+            return -1; // ERROR -1:
         }
         if (numberOfReadSockets > 0) {
-            if (binderReadSockets() == BINDER_TERMINATE) {
+            int readResult = binderReadSockets();
+            if (readResult == BINDER_TERMINATE) {
                 //return -1;
 //                printf("Binder will terminate\n");
                 break;
+            } else if (readResult != 0) {
+                // Some warnnings or errors
+                // Do not return, to avoid exit binder
+                // Print out warnings or errors
+                if (readResult > 0) {
+                    printf("BINDER WARNING: %d\n", readResult);
+                } else {
+                    printf("BINDER ERROR: %d\n", readResult);
+                }
             }
         }
     }
     
     close(binderListenSocket);
-    printf("Binder terminated!\n");
-    return 0;
+//    printf("Binder terminated!\n");
+    return 0; // SUCCESS
 }
+
+/**
+ *  Build binder's connection list, added all sockets to binderSocketsFD
+ */
 void binderBuildConnectionList() {
 	// Clears out the fd_set called socks
 	FD_ZERO(&binderSocketsFD);
@@ -176,11 +200,18 @@ void binderBuildConnectionList() {
         }
     }
 }
+
+/**
+ *  Binder read active sockets
+ *
+ *  @return Read execution result
+ */
 int binderReadSockets() {
     // If listening sock is woked up, there is a new client come in
     if (FD_ISSET(binderListenSocket, &binderSocketsFD)) {
-        if(binderHandleNewConnection() < 0) {
-            return -1;
+        int handleNewConnectionResult = binderHandleNewConnection();
+        if(handleNewConnectionResult < 0) {
+            return handleNewConnectionResult;
         }
     }
     
@@ -197,6 +228,7 @@ int binderReadSockets() {
     }
     return 0;
 }
+
 int binderHandleNewConnection() {
     int newSock;
     struct sockaddr_in client;
@@ -205,8 +237,8 @@ int binderHandleNewConnection() {
     // Try to accept a new connection
     newSock = accept(binderListenSocket, (struct sockaddr *)&client, (socklen_t *)&addr_size);
     if (newSock < 0) {
-        perror("Accept failed");
-        return -1;
+        perror("BINDER ERROR: Accept new connection failed\n");
+        return -2; // ERROR -2: Accept new connection failed
     }
     // Add this new client to clients
     for (int i = 0; (i < MAX_NUMBER_OF_CONNECTIONS) && (i != -1); i++) {
@@ -218,9 +250,9 @@ int binderHandleNewConnection() {
         }
     }
     if (newSock != -1) {
-        perror("No room left for new client.\n");
+        perror("BINDER ERROR: No room left for new connection\n");
         close(newSock);
-        return -1;
+        return -3; // ERROR -3: No room left for new connection
     }
     
     return 0;
