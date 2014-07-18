@@ -125,7 +125,8 @@ int serverForClientsInit() {
     // Create socket
     serverForClientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverForClientSocket == -1) {
-        perror("SERVER ERROR: Create listen socket for clients failed\n");
+        fprintf(stderr, "SERVER ERROR: Create listen socket for clients failed: %d\n", -32);
+//        perror("SERVER ERROR: Create listen socket for clients failed\n");
         return -32; // ERROR -32
     }
     
@@ -142,7 +143,8 @@ int serverForClientsInit() {
     // Bind
     int bindResult = bind(serverForClientSocket, (struct sockaddr *)&clientForServer, sizeof(struct sockaddr_in));
     if(bindResult == -1) {
-        perror("SERVER ERROR: Bind listen socket for clients failed\n");
+        fprintf(stderr, "SERVER ERROR: Bind listen socket for clients failed: %d\n", -33);
+//        perror("SERVER ERROR: Bind listen socket for clients failed\n");
         return -33; // ERROR -33
     }
     
@@ -152,7 +154,8 @@ int serverForClientsInit() {
     // Print out port number
     socklen_t addressLength = sizeof(clientForServer);
     if (getsockname(serverForClientSocket, (struct sockaddr*)&clientForServer, &addressLength) == -1) {
-        perror("SERVER ERROR: Get listen socket for clients port number failed\n");
+        fprintf(stderr, "SERVER ERROR: Get listen socket for clients port number failed: %d\n", -34);
+//        perror("SERVER ERROR: Get listen socket for clients port number failed\n");
         return -34; // ERROR -34
     }
     printf("SERVER_PORT %d\n", ntohs(clientForServer.sin_port));
@@ -173,7 +176,8 @@ int serverForClientsInit() {
 int serverToBinderInit() {
     serverToBinderSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverToBinderSocket == -1) {
-        perror("SERVER ERROR: Create socket to binder failed\n");
+        fprintf(stderr, "SERVER ERROR: Create socket to binder failed: %d\n", -35);
+//        perror("SERVER ERROR: Create socket to binder failed\n");
         return -35; // ERROR -35
     }
     
@@ -187,7 +191,8 @@ int serverToBinderInit() {
     
     // Connect
     if (connect(serverToBinderSocket, (struct sockaddr *)&serverToBinder, sizeof(struct sockaddr_in)) == -1) {
-        perror("SERVER ERROR: Connect socket to binder failed\n");
+        fprintf(stderr, "SERVER ERROR: Connect socket to binder failed: %d\n", -36);
+//        perror("SERVER ERROR: Connect socket to binder failed\n");
         return -36; // ERROR -36
     }
     
@@ -266,7 +271,8 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     ssize_t operationResult = -1;
     operationResult = send(serverToBinderSocket, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Send registration message length error\n");
+        fprintf(stderr, "SERVER ERROR: Send registration message length error: %d\n", -37);
+//        perror("SERVER ERROR: Send registration message length error\n");
         return -37; // ERROR -37
     }
 //    printf("Send message length succeed: %zd\n", operationResult);
@@ -275,7 +281,8 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     operationResult = -1;
     operationResult = send(serverToBinderSocket, &messageType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Send registration message type error\n");
+        fprintf(stderr, "SERVER ERROR: Send registration message type error: %d\n", -38);
+//        perror("SERVER ERROR: Send registration message type error\n");
         return -38; // ERROR -38
     }
 //    printf("Send message type succeed: %zd\n", operationResult);
@@ -284,7 +291,8 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
     operationResult = -1;
     operationResult = send(serverToBinderSocket, &messageBody, messageLength, 0);
     if (operationResult != messageLength) {
-        perror("SERVER ERROR: Send registration message body error\n");
+        fprintf(stderr, "SERVER ERROR: Send registration message body error: %d\n", -39);
+//        perror("SERVER ERROR: Send registration message body error\n");
         return -39; // ERROR -39
     }
     
@@ -311,7 +319,8 @@ int serverHandleRegisterResponse(int connectionSocket) {
     ssize_t receivedSize = -1;
     receivedSize = recv(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Receive registration response type length error\n");
+        fprintf(stderr, "SERVER ERROR: Receive registration response type length error: %d\n", -40);
+//        perror("SERVER ERROR: Receive registration response type length error\n");
         return -40; // ERROR -40
     }
     receivedSize = -1;
@@ -319,7 +328,8 @@ int serverHandleRegisterResponse(int connectionSocket) {
     // Receive response error code
     receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Receive registration response errorCode error\n");
+        fprintf(stderr, "SERVER ERROR: Receive registration response errorCode error: %d\n", -41);
+//        perror("SERVER ERROR: Receive registration response errorCode error\n");
         return -41; // ERROR -41
     }
     
@@ -328,13 +338,15 @@ int serverHandleRegisterResponse(int connectionSocket) {
     
     if (responseType == REGISTER_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
-        std::cerr << "SERVER ERROR: Receive REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;
+        fprintf(stderr, "SERVER ERROR: Receive REGISTER_FAILURE Error Code: %d\n", responseErrorCode);
+//        std::cerr << "SERVER ERROR: Receive REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;
         return responseErrorCode;
     } else if (responseType == REGISTER_SUCCESS) {
         //        printf("Binder response: REGISTER_SUCCESS\n");
         return responseErrorCode; // May 0 or 1
     } else {
-        perror("SERVER ERROR: Received wrong registration response type\n");
+        fprintf(stderr, "SERVER ERROR: Received wrong registration response type: %d\n", -42);
+//        perror("SERVER ERROR: Received wrong registration response type\n");
         return -42; // ERROR -42
     }
 }
@@ -366,7 +378,8 @@ int rpcExecute() {
         serverBuildConnectionList();
         numberOfReadSockets = select(serverHighestSocket + 1, &serverSocketsFD, NULL, NULL, NULL);
         if (numberOfReadSockets < 0) {
-            perror("SERVER ERROR: Select error\n");
+            fprintf(stderr, "SERVER ERROR: Select error: %d\n", -43);
+//            perror("SERVER ERROR: Select error\n");
             return -43; // Error -43
         }
         if (numberOfReadSockets > 0) {
@@ -415,7 +428,8 @@ int serverHandleNewConnection() {
     // Try to accept a new connection
     newSock = accept(serverForClientSocket, (struct sockaddr *)&client, (socklen_t *)&addr_size);
     if (newSock < 0) {
-        perror("SERVER ERROR: Server accpet new client failed\n");
+        fprintf(stderr, "SERVER ERROR: Server accpet new client failed: %d\n", -44);
+//        perror("SERVER ERROR: Server accpet new client failed\n");
         return -44; // Error -44
     }
     // Add this new client to clients
@@ -430,7 +444,8 @@ int serverHandleNewConnection() {
         }
     }
     if (newSock != -1) {
-        perror("SERVER ERROR: No room left for new client\n");
+        fprintf(stderr, "SERVER ERROR: No room left for new client: %d\n", -45);
+//        perror("SERVER ERROR: No room left for new client\n");
         close(newSock);
         return -45; // Error -45
     }
@@ -471,7 +486,8 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Send response type failed\n");
+        fprintf(stderr, "SERVER ERROR: Send response type failed: %d\n", -46);
+//        perror("SERVER ERROR: Send response type failed\n");
         return -46; // Error -46
     }
     
@@ -479,7 +495,8 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
     operationResult = -1;
     operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Send errorCode failed\n");
+        fprintf(stderr, "SERVER ERROR: Send errorCode failed: %d\n", -47);
+//        perror("SERVER ERROR: Send errorCode failed\n");
         return -47; // Error -47
     }
 //    printf("Server responseType: %d, errorCode: %d\n", responseType, errorCode);
@@ -515,7 +532,8 @@ int serverDealWithData(int connectionNumber) {
 //        pthread_exit((void*) 0);
     }
     else if (receivedSize != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Received wrong message length\n");
+        fprintf(stderr, "SERVER ERROR: Received wrong message length: %d\n", -48);
+//        perror("SERVER ERROR: Received wrong message length\n");
         return serverResponse(connectionSocket, EXECUTE_FAILURE, -48); //Error -48
 //        pthread_exit((void*) 0);;
     }
@@ -529,7 +547,8 @@ int serverDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
-        perror("SERVER ERROR: Received wrong message type length\n");
+        fprintf(stderr, "SERVER ERROR: Received wrong message type length: %d\n", -49);
+//        perror("SERVER ERROR: Received wrong message type length\n");
         return serverResponse(connectionSocket, EXECUTE_FAILURE, -49); //Error -49
     } else { // Receive message length correctly
 //        printf("Received length of message type: %zd\n", receivedSize);
@@ -548,7 +567,8 @@ int serverDealWithData(int connectionNumber) {
     
     // If type is not EXECUTE
     if (messageType != EXECUTE) {
-        perror("SERVER ERROR: Received wrong message type\n");
+        fprintf(stderr, "SERVER ERROR: Received wrong message type: %d\n", -50);
+//        perror("SERVER ERROR: Received wrong message type\n");
         return serverResponse(connectionSocket, EXECUTE_FAILURE, -50); //Error -50
     }
     
@@ -559,7 +579,8 @@ int serverDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
-        perror("SERVER ERROR: Received wrong message body\n");
+        fprintf(stderr, "SERVER ERROR: Received wrong message body: %d\n", -51);
+//        perror("SERVER ERROR: Received wrong message body\n");
         return serverResponse(connectionSocket, EXECUTE_FAILURE, -51); //Error -51
     }
 //    printf("Received length of message body: %zd\n", receivedSize);
@@ -575,7 +596,8 @@ int serverDealWithData(int connectionNumber) {
     int threadCreatedResult = pthread_create(&newExecutionThread, NULL, serverHandleNewExecution, (void *)&args);
     if (threadCreatedResult != 0) {
 //        printf("Dispatch new execution thread failed: %d\n", threadCreatedResult);
-        perror("SERVER ERROR: EXECUTE Create new thread failed\n");
+        fprintf(stderr, "SERVER ERROR: EXECUTE Create new thread failed: %d\n", -52);
+//        perror("SERVER ERROR: EXECUTE Create new thread failed\n");
         return serverResponse(connectionSocket, EXECUTE_FAILURE, -52); //Error -52
 //        return -1;
     }
@@ -630,7 +652,8 @@ void* serverHandleNewExecution(void *t) {
                         if (name != NULL) free(name);
                         if (argTypes != NULL) free(argTypes);
                         if (messageBody != NULL) free(messageBody);
-                        perror("SERVER ERROR: EXECUTE argTypes size error\n");
+                        fprintf(stderr, "SERVER ERROR: EXECUTE argTypes size error: %d\n", -53);
+//                        perror("SERVER ERROR: EXECUTE argTypes size error\n");
                         serverResponse(connectionSocket, EXECUTE_FAILURE, -53); //Error -53
                         pthread_exit((void*) 0);
                     }
@@ -643,7 +666,8 @@ void* serverHandleNewExecution(void *t) {
                     if (argTypes != NULL) free(argTypes);
                     if (argsByte != NULL) free(argsByte);
                     if (messageBody != NULL) free(messageBody);
-                    perror("SERVER ERROR: EXECUTE Message body size error\n");
+                    fprintf(stderr, "SERVER ERROR: EXECUTE Message body size error: %d\n", -54);
+//                    perror("SERVER ERROR: EXECUTE Message body size error\n");
                     serverResponse(connectionSocket, EXECUTE_FAILURE, -54); //Error -54
                     pthread_exit((void*) 0);
                     break;
@@ -672,7 +696,8 @@ void* serverHandleNewExecution(void *t) {
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
-        perror("SERVER ERROR: EXECUTE Init args failed\n");
+        fprintf(stderr, "SERVER ERROR: EXECUTE Init args failed: %d\n", -55);
+//        perror("SERVER ERROR: EXECUTE Init args failed\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -55); //Error -55
         pthread_exit((void*) 0);;
     }
@@ -689,7 +714,8 @@ void* serverHandleNewExecution(void *t) {
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
-        perror("SERVER ERROR: EXECUTE Skeleton not found\n");
+        fprintf(stderr, "SERVER ERROR: EXECUTE Skeleton not found: %d\n", -56);
+//        perror("SERVER ERROR: EXECUTE Skeleton not found\n");
         serverResponse(connectionSocket, EXECUTE_FAILURE, -56); //Error -56
         pthread_exit((void*) 0);
     }
@@ -731,7 +757,8 @@ void* serverHandleNewExecution(void *t) {
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
-        perror("SERVER ERROR: EXECUTE Send back execution message length failed\n");
+        fprintf(stderr, "SERVER ERROR: EXECUTE Send back execution message length failed: %d\n", -58);
+//        perror("SERVER ERROR: EXECUTE Send back execution message length failed\n");
         pthread_exit((void*) 0);
     }
     // Prepare messageBody
@@ -778,7 +805,8 @@ void* serverHandleNewExecution(void *t) {
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
-        perror("SERVER ERROR: EXECUTE Send back execution result failed\n");
+        fprintf(stderr, "SERVER ERROR: EXECUTE Send back execution result failed: %d\n", -59);
+//        perror("SERVER ERROR: EXECUTE Send back execution result failed\n");
         pthread_exit((void*) 0);
         
 //        perror("Server to client: Send [name, argTypes, argsByte,] failed\n");
