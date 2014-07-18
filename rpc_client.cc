@@ -76,7 +76,7 @@ int ConnectToBinder(){
             exit(-1);
         }
         socketfd = Connection(host, portnum);
-        std::cout<<"new socket fd with binder is: "<<socketfd<<std::endl;
+//        std::cout<<"new socket fd with binder is: "<<socketfd<<std::endl;
         if(socketfd < 0){
             std::cerr<<"wrong socket identifier!"<<std::endl;
             exit(-1);
@@ -119,7 +119,7 @@ int clientHandleBinderResponse(int connectionSocket) {
         std::cerr << "Binder response: LOC_FAILURE Error Code: " << responseErrorCode << std::endl;
         return responseErrorCode;
     } else if (responseType == LOC_SUCCESS) {
-        printf("Binder response: LOC_SUCCESS\n");
+//        printf("Binder response: LOC_SUCCESS\n");
         return 0;
     } else {
         printf("No such a response type from binder to client! Type is: %d\n",responseType);
@@ -158,13 +158,13 @@ int clientHandleResponse(int connectionSocket) {
     
     responseType = ntohl(responseType_network);
     responseErrorCode = ntohl(responseErrorCode_network);
-    printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
+//    printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
     if (responseType == EXECUTE_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
         std::cerr << "Server response: EXECUTE_FAILURE Error Code: " << responseErrorCode << std::endl;
         return responseErrorCode;
     } else if (responseType == EXECUTE_SUCCESS) {
-        printf("Server response: EXECUTE_SUCCESS\n");
+//        printf("Server response: EXECUTE_SUCCESS\n");
         return 0;
     } else {
         return 0;
@@ -229,7 +229,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
         perror("Client registion to binder: Send message length failed\n");
         return -1;
     }
-    printf("Send message length succeed: %zd\n", operationResult);
+//    printf("Send message length succeed: %zd\n", operationResult);
     
     // Send message type (4 bytes)
     operationResult = -1;
@@ -238,7 +238,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
         perror("Client registion to binder: Send message type failed\n");
         return -1;
     }
-    printf("Send message type succeed: %zd\n", operationResult);
+//    printf("Send message type succeed: %zd\n", operationResult);
     
     // Send message body (varied bytes)
     operationResult = -1;
@@ -247,7 +247,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
         perror("Client registion to binder: Send message body failed\n");
         return -1;
     }
-    printf("Send message body succeed: %zd\n", operationResult);
+//    printf("Send message body succeed: %zd\n", operationResult);
     
 //    printf("Name: %s\n", name);
 //    printf("ArgTypes: ");
@@ -302,12 +302,12 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
             lengthOfArray = 1;
         }
         memcpy(messageBody + offset, args[i], lengthOfArray * argSize(argTypes[i]));
-        std::cout<<i<<" th arg size is "<<argSize(argTypes[i])<<std::endl;
+//        std::cout<<i<<" th arg size is "<<argSize(argTypes[i])<<std::endl;
         offset += lengthOfArray * argSize(argTypes[i]);
     }
     memcpy(messageBody + offset, &seperator, 1);
     
-    printf("total message size: %d\n",totalSize);
+//    printf("total message size: %d\n",totalSize);
     uint32_t messageLength = totalSize;
     uint32_t messageType = EXECUTE;
     uint32_t messageLength_network = htonl(messageLength);
@@ -468,7 +468,7 @@ int terminateRequest(int sockfd){
         perror("Client termination message to binder: Send message length failed\n");
         return -1;
     }
-    printf("Send termination message length succeed: %zd\n", operationResult);
+    //printf("Send termination message length succeed: %zd\n", operationResult);
     
     // Send message type (4 bytes)
     operationResult = -1;
@@ -477,7 +477,7 @@ int terminateRequest(int sockfd){
         perror("Client termination message to binder: Send message type failed\n");
         return -1;
     }
-    printf("Send termination message type succeed: %zd\n", operationResult);
+//    printf("Send termination message type succeed: %zd\n", operationResult);
     
     // Send message body (varied bytes)
     operationResult = -1;
@@ -486,7 +486,7 @@ int terminateRequest(int sockfd){
         perror("Client termination message to binder: Send message body failed\n");
         return -1;
     }
-    printf("Send termination message body succeed: %zd\n", operationResult);
+//    printf("Send termination message body succeed: %zd\n", operationResult);
     
     return 0;
 }
@@ -536,7 +536,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
     else {
         // Received message length should be 16 + sizeof(portNumber) + 2
         // Receive message length correctly
-        printf("Received length of message length: %zd\n", receivedSize);
+//        printf("Received length of message length: %zd\n", receivedSize);
         close(binder_fd);
     }
     char* server_host = (char*)malloc(sizeof(sizeof(char) * 16));
@@ -549,9 +549,9 @@ int rpcCall(char* name, int* argTypes, void** args) {
     const char* server_port = s.c_str();
 
     int server_sockfd;
-    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+//    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = Connection(server_host, server_port);
-    std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
+//    std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
     if(server_sockfd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
         return -1;
