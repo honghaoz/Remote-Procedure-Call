@@ -16,6 +16,7 @@
 #include <math.h>
 #include <utility>
 #include <map>
+#include <set>
 #include "rpc.h"
 #include "rpc_extend.h"
 #include "pmap.h"
@@ -54,6 +55,18 @@ int rpcBinderInit() {
     struct addrinfo hints, *res, *p;
     int status;
     char ipstr[INET_ADDRSTRLEN];
+    std::string localIP1 = "127.0.1.1";
+    std::string localIP2 = "127.0.0.1";
+    std::string localIP3 = "127.0.0.2";
+    std::string localIP4 = "0.0.0.0";
+    std::set<std::string> localIPSet;
+    localIPSet.insert(localIP1);
+    localIPSet.insert(localIP2);
+    localIPSet.insert(localIP3);
+    localIPSet.insert(localIP4);
+//    localIPSet.insert(localIP3);
+    
+    
     
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET; // IPv4
@@ -73,6 +86,14 @@ int rpcBinderInit() {
             addr = &(ipv4->sin_addr);
             // Convert the IP to a string and print it:
             inet_ntop(p->ai_family, addr, ipstr, sizeof ipstr);
+            
+            std::string ip(ipstr);
+            std::set<std::string>::iterator resultIt = localIPSet.find(ip);
+            // If not, found! Skip to next
+            if (resultIt != localIPSet.end()) {
+                printf("Found Ip:%s, skip.\n", ip.c_str());
+                continue;
+            }
             printf("BINDER_ADDRESS %s\n", ipstr);
             break;
         }
