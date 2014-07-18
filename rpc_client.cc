@@ -396,6 +396,16 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         if(argsByte_received == NULL){
             printf("args byte is null\n");
         }
+        
+        if (argsByteToArgs(argTypes_received, argsByte_received, args)) {
+            //            printf("args init succeed!\n");
+        } else {
+            free(name_received);
+            free(argTypes_received);
+            free(argsByte_received);
+            //            free(args_received);
+            return -1;
+        }
     }
     else{
         printf("reasonCode: %d\n",response);
@@ -808,7 +818,11 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     return 0;
 }
 
-
+/***************** rpcTerminate *************************
+ Purpose: terminate servers
+ 
+ return: (integer) the socket fd or -1 as error occurs
+ ********************************************************/
 int rpcTerminate() {
     std::cout << "rpcTerminate()" << std::endl;
     int binder_fd;
