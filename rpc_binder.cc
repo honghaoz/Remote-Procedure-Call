@@ -271,7 +271,14 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
 int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber);
 
-// Receive message length, message type and allocate message body
+/**
+ *  Receive message length, message type and allocate message body
+ *  According message type, call corresponding function
+ *
+ *  @param connectionNumber the index for active socket in binderConnections
+ *
+ *  @return Execution result
+ */
 int binderDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = binderConnections[connectionNumber];
@@ -367,6 +374,15 @@ int binderDealWithData(int connectionNumber) {
     return 0;
 }
 
+/**
+ *  Binder response responseType and errorCode with connectionSocket
+ *
+ *  @param connectionSocket Socket descriptor for the connection
+ *  @param responseType     Response message type
+ *  @param errorCode        Error code
+ *
+ *  @return errorCode
+ */
 // Server send back response
 int binderResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
     // Send response message to server
@@ -392,6 +408,16 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
     return errorCode;
 }
 
+/**
+ *  Deal with REGISTER message type
+ *  Insert new procedure in binder's local database
+ *
+ *  @param connectionSocket Socket descriptor for binder for servers
+ *  @param messageBody      Received message body [ip,portnum,name,argTypes,]
+ *  @param messageBodySize  Size of messageBody in byte
+ *
+ *  @return Execution result (1 for replaced procedure warning)
+ */
 int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
     // Message body: [ip,portnum,name,argTypes,]
     char *ipv4Address = NULL;
@@ -579,6 +605,15 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     return 0;
 }
 
+/**
+ *  Use received message to find all available servers, response a list of IPs and Port numbers
+ *
+ *  @param connectionSocket Socket descriptor for binder for client
+ *  @param messageBody      [name,argTypes,]
+ *  @param messageBodySize  size for [name,argTypes,]
+ *
+ *  @return Execute result
+ */
 int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
     // Message body: [name,argTypes,]
     char *name = NULL;
@@ -674,7 +709,17 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
     return 0; //SUCCESS
 }
 
-
+/**
+ *  Hanlde terminate message from client, send terminate messages to all
+ *  connected servers
+ *
+ *  @param connectionSocket Socket descriptor for binder for client
+ *  @param messageBody      NULL
+ *  @param messageBodySize  0
+ *  @param connectionNumber index for connectionSocket in binderConnections
+ *
+ *  @return Execution result
+ */
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber) {
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
         // If this is socket for client, continue
