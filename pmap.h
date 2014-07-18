@@ -45,6 +45,11 @@ public:
     void clear_vecIpForCached(P_NAME_TYPES key);
     bool isIpPortEqual(P_IP_PORT k1, P_IP_PORT k2);
     void free_P_IP_PORT(P_IP_PORT ip);
+    void free_P_NAME_TYPES(P_NAME_TYPES name_type);
+    void free_P_MAP_IP_PORT(P_MAP_IP_PORT);
+    void free_P_NAME_TYPES_SOCKET(P_NAME_TYPES_SOCKET pair);
+    void free_P_MAP_SKELETON(P_MAP_SKELETON);
+    void free_P_MAP_WITHOUTSOCKET(P_MAP_WITHOUTSOCKET);
     pmap();
     ~pmap();
 };

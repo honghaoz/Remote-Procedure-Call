@@ -320,11 +320,68 @@ void pmap::clear_vecIpForCached(P_NAME_TYPES key){
     }
 }
 
-void free_P_IP_PORT(P_IP_PORT ip){
+void pmap::free_P_IP_PORT(P_IP_PORT ip){
     //to free char* in pair
+    if(ip.first != NULL){
+        delete[] ip.first;
+        ip.first = NULL;
+    }
+}
+
+void pmap::free_P_NAME_TYPES(P_NAME_TYPES name_type){
+    if(name_type.first != NULL){
+        delete[] name_type.first;
+        name_type.first = NULL;
+    }
+    if(name_type.second != NULL){
+        delete[] name_type.second;
+        name_type.second = NULL;
+    }
+}
+
+
+void pmap::free_P_MAP_SKELETON(P_MAP_SKELETON pair){
+    free_P_NAME_TYPES(pair.first);
+    
+}
+void pmap::free_P_MAP_WITHOUTSOCKET(P_MAP_WITHOUTSOCKET pair){
+    free_P_NAME_TYPES(pair.first);
+    free_P_IP_PORT(pair.second);
+}
+
+void pmap::free_P_NAME_TYPES_SOCKET(P_NAME_TYPES_SOCKET pair){
+    free_P_NAME_TYPES(pair.first);
+}
+
+void pmap::free_P_MAP_IP_PORT(P_MAP_IP_PORT pair){
+    free_P_NAME_TYPES_SOCKET(pair.first);
+    free_P_IP_PORT(pair.second);
 }
 
 pmap::~pmap() {
+    for(vector<P_MAP_IP_PORT>::iterator it = vecIp.begin(); it != vecIp.end(); it++){
+        free_P_MAP_IP_PORT(*it);
+    }
+    
+//    for(vector<P_MAP_SKELETON>::iterator it1 = vecSkeleton.begin(); it1 != vecSkeleton.end(); it1++){
+//        free_P_MAP_SKELETON(*it1);
+//    }
+    
+    for(vector<P_MAP_WITHOUTSOCKET>::iterator it2 = vecIpForCached.begin(); it2 != vecIpForCached.end(); it2++){
+        free_P_MAP_WITHOUTSOCKET(*it2);
+    }
+    
+    for(vector<P_IP_PORT>::iterator it3 = vecIpPort.begin(); it3 != vecIpPort.end(); it3++){
+        free_P_IP_PORT(*it3);
+    }
+    
     vecIp.clear();
     vecSkeleton.clear();
 }
+
+
+
+
+
+
+
