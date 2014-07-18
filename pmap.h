@@ -29,6 +29,7 @@ class pmap {
     std::vector<P_MAP_SKELETON> vecSkeleton;
     std::vector<P_MAP_WITHOUTSOCKET> vecIpForCached;
     std::vector<int> vecSocket;
+    std::vector<P_IP_PORT> vecIpPort;
     
     void addToVectorSocket(int newSocket);
     P_IP_PORT* findIP(P_NAME_TYPES key1, int key2);
