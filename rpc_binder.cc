@@ -751,7 +751,7 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         int eachServerSocket = binderConnections[i];
         if (eachServerSocket == 0) continue;
         // For each serverSocket, send out Terminate message
-        free(messageBody);
+        if (messageBody != NULL) free(messageBody);
         BYTE* messageBody = NULL;
         
         // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
