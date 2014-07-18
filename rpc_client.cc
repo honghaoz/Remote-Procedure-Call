@@ -21,7 +21,7 @@
 #include "pmap.h"
 //using namespace std;
 
-#define DEBUG1 0
+#define DEBUG1 false
 
 pmap clientDataBase;
 
@@ -348,7 +348,9 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     
     int response = 0;
     response = clientHandleResponse(sockfd);
+#if DEBUG1
     std::cout<<"response code from server: "<<response<<std::endl;
+#endif
     if(response == 0){
         //success
         // Allocate messageBody
@@ -645,10 +647,12 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
     int server_sockfd;
 #if DEBUG1
     std::cout<<"New server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+#else
 #endif
     server_sockfd = Connection(server_host, server_port);
 #if DEBUG1
     std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
+#else
 #endif
     free(serverIpPort);
     serverIpPort = NULL;
@@ -669,9 +673,11 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
 
 
 int rpcCall(char* name, int* argTypes, void** args) {
+    #if DEBUG1
     std::cout<<std::endl;
     std::cout<<"***********************************"<<std::endl;
     std::cout << "rpcCall(" << name << ")" << std::endl;
+#endif
     int binder_fd;
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
@@ -743,10 +749,11 @@ int rpcCall(char* name, int* argTypes, void** args) {
     return 0;
 }
 int rpcCacheCall(char* name, int* argTypes, void** args) {
+    #if DEBUG1
     std::cout<<std::endl;
     std::cout<<"***********************************"<<std::endl;
     std::cout << "rpcCacheCall(" << name << ")" << std::endl;
-    
+#endif
     P_NAME_TYPES key(name,argTypes);
     P_IP_PORT* serverIpPort = NULL;
     serverIpPort = clientDataBase.findIp_cached(key);
@@ -806,15 +813,17 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         std::cerr<<"CLIENT ERROR: Client Binder Connection Error Occurs!"<<std::endl;
         return -61;
     }
-    
-    //std::cout<<"send cache loc request"<<std::endl;
+#if DEBUG1
+    std::cout<<"send cache loc request"<<std::endl;
+#endif
     int reasoncode = CachedLocationRequest(name, argTypes,binder_fd);
     if(reasoncode != 0){
         perror("CLIENT ERROR: CachedCall: failed to send location request to binder\n");
         return reasoncode;
     }
-    
-    //std::cout<<"waiting binder response"<<std::endl;
+#if DEBUG1
+    std::cout<<"waiting binder response"<<std::endl;
+#endif
     reasoncode = clientHandleBinderResponseForCachedCall(binder_fd);
     if(reasoncode != 0){
         perror("CLIENT ERROR: CachedCall: failed to handle response from binder\n");
@@ -822,9 +831,7 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     }
     
     int server_sockfd;
-    //    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = getServerSocket(name, argTypes,binder_fd);
-//        std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
     if(server_sockfd < 0){
         std::cerr<<"CLIENT ERROR: Server Client Connection Error Ocurrs!"<<std::endl;
         return -65;
@@ -846,7 +853,9 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
  return: (integer) the socket fd or -1 as error occurs
  ********************************************************/
 int rpcTerminate() {
+    #if DEBUG1
     std::cout << "rpcTerminate()" << std::endl;
+#endif
     int binder_fd;
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
