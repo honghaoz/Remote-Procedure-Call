@@ -34,9 +34,11 @@ class pmap {
     P_IP_PORT* findIP(P_NAME_TYPES key1, int key2);
 public:
     P_IP_PORT* findIp_client(P_NAME_TYPES key); // rpcBinder will call
+    P_IP_PORT* findIp_cached(P_NAME_TYPES key); // rpcClient will call
     skeleton findSkeleton(P_NAME_TYPES key); // rpcServer will call
     int insert(P_NAME_TYPES_SOCKET key, P_IP_PORT value); // rpcBinder register
     int insert(P_NAME_TYPES key, skeleton value); //  rpcServer register
+    int insert(P_NAME_TYPES key, P_IP_PORT value);
     pmap();
     ~pmap();
 };
