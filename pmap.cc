@@ -11,6 +11,7 @@
 #include <string>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
 using namespace std;
 
 
@@ -246,6 +247,7 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
             break;
         }
     }
+    std::cout<<"insert port: "<<value.second<<std::endl;
     P_MAP_WITHOUTSOCKET newKV = P_MAP_WITHOUTSOCKET(key, value);
     // Not Found
     if (KVFound == vecIpForCached.end()) {
