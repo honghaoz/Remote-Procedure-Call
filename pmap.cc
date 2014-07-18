@@ -17,6 +17,8 @@ using namespace std;
 
 #define PROCESS_MASK 0xFFFF0000
 
+P_IP_PORT sentinel(NULL,-1);
+
 pmap::pmap(){
     // Do nothing
 }
@@ -74,6 +76,9 @@ bool isNameTypesSocketEqual(P_NAME_TYPES_SOCKET k1, P_NAME_TYPES_SOCKET k2) {
 }
 
 bool isIpPortEqual(P_IP_PORT k1, P_IP_PORT k2) {
+    if(k1.first == NULL || k2.first == NULL){
+        return false;
+    }
     string k1Ip(k1.first);
     int k1Port = k1.second;
     
@@ -242,6 +247,7 @@ P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
     P_IP_PORT* IpAndPort = NULL;
     
     for(std::vector<P_IP_PORT>::iterator itIp = vecIpPort.begin(); itIp != vecIpPort.end(); itIp++){
+        if(itIp->first == NULL) continue;
         for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
             P_NAME_TYPES existedKey = it->first;
             if (isNameTypesEqual(key, existedKey) && isIpPortEqual(it->second, *itIp)){
@@ -252,7 +258,7 @@ P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
                 P_IP_PORT temp = *itIp;
                 vecIpPort.erase(itIp);
                 vecIpPort.push_back(temp);
-                break;
+                return IpAndPort;
             }
         }
     }
@@ -261,7 +267,7 @@ P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
 }
 
 int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
-    bool newvalue = true;
+    
     std::vector<P_MAP_WITHOUTSOCKET>::iterator KVFound = vecIpForCached.end();
     for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
@@ -270,14 +276,24 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
             break;
         }
     }
-    for(std::vector<P_IP_PORT>::iterator it = vecIpPort.begin(); it != vecIpPort.end(); it++){
-        if(isIpPortEqual(value,*it)){
+    bool newvalue = true;
+    for(std::vector<P_IP_PORT>::iterator it1 = vecIpPort.begin(); it1 != vecIpPort.end(); it1++){
+        if(isIpPortEqual(value,*it1)){
             newvalue = false;
             break;
         }
     }
+    if(vecIpPort.size() == 0){
+        vecIpPort.push_back(sentinel);
+        std::cout<<"pushed sentinel"<<std::endl;
+    }
     if(newvalue){
-        vecIpPort.push_back(value);
+        for(std::vector<P_IP_PORT>::iterator it2 = vecIpPort.begin(); it2 != vecIpPort.end(); it2++){
+            if(it2->second == -1){
+                vecIpPort.insert(it2, value);
+                break;
+            }
+        }
         std::cout<<"insert port: "<<value.second<<std::endl;
     }
     

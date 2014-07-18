@@ -784,7 +784,7 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         const char* server_port = s.c_str();
         
         int server_sockfd;
-        //    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
+        std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
         server_sockfd = Connection(server_host, server_port);
         std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
         if(server_sockfd < 0){
