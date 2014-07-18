@@ -60,6 +60,9 @@ bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args);
 void printOutArgTypes(int *argTypes);
 void printOutArgs(int * &argTypes, void ** &args);
 void printOutArgsByte(int * &argTypes, BYTE * &argsByte);
+
+extern int rpcBinderInit();
+extern int rpcBinderListen();
     
 
 
