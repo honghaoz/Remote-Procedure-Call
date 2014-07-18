@@ -499,6 +499,8 @@ int terminateRequest(int sockfd){
 
 
 int rpcCall(char* name, int* argTypes, void** args) {
+    std::cout<<std::endl;
+    std::cout<<"***********************************"<<std::endl;
     std::cout << "rpcCall(" << name << ")" << std::endl;
     int binder_fd;
     binder_fd = ConnectToBinder();//connect to binder first
