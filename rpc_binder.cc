@@ -44,7 +44,6 @@ pmap binderProcedureToID;
  ****************************************************************/
 int rpcBinderInit() {
     std::cout << "rpcBinderInit()" << std::endl;
-
     // Get IPv4 address for this host
     struct addrinfo hints, *res, *p;
     int status;
@@ -150,14 +149,14 @@ int rpcBinderListen() {
         if (numberOfReadSockets > 0) {
             if (binderReadSockets() == BINDER_TERMINATE) {
                 //return -1;
-                printf("Binder will terminate\n");
+//                printf("Binder will terminate\n");
                 break;
             }
         }
     }
     
     close(binderListenSocket);
-    printf("Binder terminate!\n");
+    printf("Binder terminated!\n");
     return 0;
 }
 void binderBuildConnectionList() {
@@ -212,7 +211,7 @@ int binderHandleNewConnection() {
     // Add this new client to clients
     for (int i = 0; (i < MAX_NUMBER_OF_CONNECTIONS) && (i != -1); i++) {
         if (binderConnections[i] == 0) {
-            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
+//            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
             binderConnections[i] = newSock;
             newSock = -1;
             break;
@@ -248,7 +247,7 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
         perror("Binder sends response errorCode failed\n");
         return -1;
     }
-    printf("Binder responseType: %d, errorCode: %d\n", responseType, errorCode);
+//    printf("Binder responseType: %d, errorCode: %d\n", responseType, errorCode);
     
     return 0;
 }
@@ -274,7 +273,7 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, &messageLength_network, sizeof(uint32_t), 0);
     // Connection lost
     if (receivedSize == 0) {
-        printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
+//        printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
         close(connectionSocket);
         
         // Set this place to be available
@@ -293,7 +292,7 @@ int binderDealWithData(int connectionNumber) {
 //        return 0;
     }
     else { // Receive message length correctly
-        printf("Received length of message length: %zd\n", receivedSize);
+//        printf("Received length of message length: %zd\n", receivedSize);
         messageLength = ntohl(messageLength_network);
     }
     
@@ -306,7 +305,7 @@ int binderDealWithData(int connectionNumber) {
         return -1;
 //        return 0;
     } else { // Receive message length correctly
-        printf("Received length of message type: %zd\n", receivedSize);
+//        printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
     }
     
@@ -322,7 +321,7 @@ int binderDealWithData(int connectionNumber) {
         return -1;
 //        return 0;
     }
-    printf("Received length of message body: %zd\n", receivedSize);
+//    printf("Received length of message body: %zd\n", receivedSize);
     
     switch (messageType) {
         case REGISTER: {
@@ -409,14 +408,12 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     }
     // Process completed
     
-    printf("IP: %s\n", ipv4Address);
-    printf("Port: %d\n", portNumber);
-    printf("Name: %s\n", name);
-    printf("ArgTypes: ");
-    for (int i = 0; i < argTypesLength(argTypes); i++) {
-        printf("%ud ", argTypes[i]);
-    }
-    printf("\n");
+    printf("Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
+//    printf("ArgTypes: ");
+//    for (int i = 0; i < argTypesLength(argTypes); i++) {
+//        printf("%ud ", argTypes[i]);
+//    }
+//    printf("\n");
     
     // If message is correct, register, else free
     if (responseType == REGISTER_SUCCESS) {
@@ -486,7 +483,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
             messageCount++;
         }
     }
-    printf("Locate Name: %s\n", name);
+//    printf("Locate: %s\n", name);
 //    printf("Locate ArgTypes: ");
 //    for (int i = 0; i < argTypesLength(argTypes); i++) {
 //        printf("%ud ", argTypes[i]);
@@ -505,7 +502,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     }
     ipv4Address = queryResult->first;
     portNumber = queryResult->second;
-    printf("Found IP: %s Port: %d\n", ipv4Address, portNumber);
+    printf("Locate: %s, found IP: %s, Port: %d\n", name, ipv4Address, portNumber);
     
     binderResponse(connectionSocket, LOC_SUCCESS, 0);
     
@@ -535,8 +532,8 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
 //        return 0;
         return -1;
     }
-    printf("Response located IP: %s\n", ipv4Address);
-    printf("Response located Port: %d\n", portNumber);
+//    printf("Response located IP: %s\n", ipv4Address);
+//    printf("Response located Port: %d\n", portNumber);
     
     if (name != NULL) free(name);
     if (argTypes != NULL) free(argTypes);
@@ -545,7 +542,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
 
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber) {
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
-        printf("Check %dth socket\n", i);
+//        printf("Check %dth socket\n", i);
         // If this is socket for client, continue
         if (i == connectionNumber) continue;
         int eachServerSocket = binderConnections[i];
@@ -566,7 +563,7 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
             perror("Binder termination message to server: Send message length failed\n");
             return -1;
         }
-        printf("Binder sends termination message length succeed: %zd\n", operationResult);
+//        printf("Binder sends termination message length succeed: %zd\n", operationResult);
         
         // Send message type (4 bytes)
         operationResult = -1;
@@ -575,7 +572,7 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
             perror("Binder termination message to server: Send message type failed\n");
             return -1;
         }
-        printf("Binder sends termination message type succeed: %zd\n", operationResult);
+//        printf("Binder sends termination message type succeed: %zd\n", operationResult);
         
         // Send message body (varied bytes)
         operationResult = -1;
@@ -584,7 +581,7 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
             perror("Binder termination message to server: Send message body failed\n");
             return -1;
         }
-        printf("Binder sends termination message body succeed: %zd\n", operationResult);
+//        printf("Binder sends termination message body succeed: %zd\n", operationResult);
     }
     return 0;
 }
