@@ -165,7 +165,7 @@ int clientHandleResponse(int connectionSocket) {
     if (responseType == EXECUTE_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
         std::cerr << "Server response: EXECUTE_FAILURE Error Code: " << responseErrorCode << std::endl;
-        return responseErrorCode;
+        return 2;
     } else if (responseType == EXECUTE_SUCCESS) {
 //        printf("Server response: EXECUTE_SUCCESS\n");
         return 0;
@@ -678,6 +678,8 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
     std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = Connection(server_host, server_port);
     std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
+    free(serverIpPort);
+    serverIpPort = NULL;
     if(server_sockfd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
         return -1;
@@ -774,8 +776,8 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     P_NAME_TYPES key(name,argTypes);
     P_IP_PORT* serverIpPort = NULL;
     serverIpPort = clientDataBase.findIp_cached(key);
-    
-    if(serverIpPort != NULL){
+    P_IP_PORT IpPort = *serverIpPort;
+    while(serverIpPort != NULL){
         int portnum = serverIpPort->second;
         char* server_host = serverIpPort->first;
         std::ostringstream convert;
@@ -795,7 +797,17 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         int reason = executeRequest(name, argTypes, args, server_sockfd);
         if(reason != 0){
             close(server_sockfd);
-            return reason;
+            if(serverIpPort != NULL){
+                free(serverIpPort);
+                serverIpPort = NULL;
+            }
+            serverIpPort = clientDataBase.findIp_cached(key);
+            if(clientDataBase.isIpPortEqual(*serverIpPort, IpPort)){
+                clientDataBase.clear_vecIpForCached(key);
+                int retcode = rpcCacheCall(name, argTypes, args);
+                return retcode;
+            }
+            continue;
         }
         close(server_sockfd);
         return 0;
