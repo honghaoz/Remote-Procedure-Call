@@ -3,6 +3,7 @@ all: Client Server Binder
 Client:
 	g++ -Wall -o client1 client1.cc rpc_helper.cc rpc_client.cc pmap.cc
 	g++ -Wall -o client2 client2.cc rpc_helper.cc rpc_client.cc pmap.cc
+	g++ -Wall -o client_cacheCall client_cacheCall.cc rpc_helper.cc rpc_client.cc pmap.cc
 
 Server:
 	g++ -Wall -o server server.cc server_functions.cc server_function_skels.cc rpc_helper.cc pmap.cc rpc_server.cc -lpthread

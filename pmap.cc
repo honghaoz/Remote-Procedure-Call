@@ -256,13 +256,20 @@ int pmap::insert(P_NAME_TYPES key, P_IP_PORT value){
     }
     // Found
     else {
-        vecIpForCached.erase(KVFound);
+        //vecIpForCached.erase(KVFound);
         vecIpForCached.push_back(newKV);
         return 1;
     }
 }
 
-
+void pmap::clear_vecIpForCached(P_NAME_TYPES key, P_IP_PORT value){
+    for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
+            P_NAME_TYPES existedKey = it->first;
+            if (isNameTypesEqual(key, existedKey)){
+                vecIpForCached.erase(it);
+            }
+    }
+}
 
 pmap::~pmap() {
     vecIp.clear();
