@@ -468,7 +468,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     P_NAME_TYPES procedureNameTypes(name, argTypes);
     P_NAME_TYPES_SOCKET procedureKey(procedureNameTypes, connectionSocket);
     P_IP_PORT ID(ipv4Address, portNumber);
-    binderProcedureToID.insert(procedureKey, ID);
+    int insertResult = binderProcedureToID.insert(procedureKey, ID);
     
     // Clean
     if (ipv4Address != NULL) free(ipv4Address);
@@ -476,8 +476,8 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     if (argTypes != NULL) free(argTypes);
     if (messageBody != NULL) free(messageBody);
     
-    // Send back register success
-    return binderResponse(connectionSocket, REGISTER_SUCCESS, 0);
+    // Send back register success (0: success, 1: replaced)
+    return binderResponse(connectionSocket, REGISTER_SUCCESS, insertResult);
 }
 
 /**
