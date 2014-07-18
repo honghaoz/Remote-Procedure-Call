@@ -36,9 +36,13 @@ int serverConnections[MAX_NUMBER_OF_CLIENTS]; // Array of connected clients
 fd_set serverSocketsFD; // Socket file descriptors that we want to wake up for
 int serverHighestSocket; // Highest # of socket file descriptor
 
+#define MAX_NUMBER_OF_BINDERS 100
 // Socket descriptor of server to binder
 int serverToBinderSocket;
-// Socket descriptor
+
+//// Socket descriptor of server to binders
+//int serverToBinderConnections[MAX_NUMBER_OF_BINDERS]; // Array of connected binders
+//int currentNumberOfBinderConnections = 0;
 
 // Server identifier and port number
 char ipv4Address[INET_ADDRSTRLEN];
