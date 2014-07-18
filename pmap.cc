@@ -228,7 +228,7 @@ P_IP_PORT* pmap::findIp_cached(P_NAME_TYPES key) {
     for (std::vector<P_MAP_WITHOUTSOCKET>::iterator it = vecIpForCached.begin(); it != vecIpForCached.end(); it++) {
         P_NAME_TYPES existedKey = it->first;
         if (isNameTypesEqual(key, existedKey)){
-            IpAndPort = &(it->second);
+            *IpAndPort = it->second;
             P_MAP_WITHOUTSOCKET temp = *it;
             vecIpForCached.erase(it);
             vecIpForCached.push_back(temp);
