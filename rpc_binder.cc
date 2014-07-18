@@ -462,7 +462,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
         }
     }
     // Process completed
-    printf("Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
+    printf("    Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
     
     // If message is correct, register in local database
     P_NAME_TYPES procedureNameTypes(name, argTypes);
@@ -537,7 +537,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     }
     ipv4Address = queryResult->first;
     portNumber = queryResult->second;
-    printf("Locate: %s, found IP: %s, Port: %d\n", name, ipv4Address, portNumber);
+    printf("    Locate: %s, found IP: %s, Port: %d\n", name, ipv4Address, portNumber);
     
     // Response LOC_SUCCESS
     binderResponse(connectionSocket, LOC_SUCCESS, 0);
@@ -668,7 +668,7 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
         if (argTypes != NULL) free(argTypes);
         if (messageBody != NULL) free(messageBody);
         perror("BINDER ERROR: LOC_CACHED Send Ip+Ports body failed\n");
-        return -18; // ERROR -19
+        return -19; // ERROR -19
     }
 //    printf("Binder cached call send message body succeed: %zd\n", operationResult);
     return 0; //SUCCESS
@@ -677,12 +677,12 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
 
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber) {
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
-//        printf("Check %dth socket\n", i);
         // If this is socket for client, continue
         if (i == connectionNumber) continue;
         int eachServerSocket = binderConnections[i];
         if (eachServerSocket == 0) continue;
         // For each serverSocket, send out Terminate message
+        free(messageBody);
         BYTE* messageBody = NULL;
         
         // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
@@ -695,8 +695,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         ssize_t operationResult = -1;
         operationResult = send(eachServerSocket, &messageLength_network, sizeof(uint32_t), 0);
         if (operationResult != sizeof(uint32_t)) {
-            perror("Binder termination message to server: Send message length failed\n");
-            return -1;
+            perror("BINDER ERROR: TERMINATE Send message to servers length error\n");
+            return -20; // ERROR -20
         }
 //        printf("Binder sends termination message length succeed: %zd\n", operationResult);
         
@@ -704,8 +704,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         operationResult = -1;
         operationResult = send(eachServerSocket, &messageType_network, sizeof(uint32_t), 0);
         if (operationResult != sizeof(uint32_t)) {
-            perror("Binder termination message to server: Send message type failed\n");
-            return -1;
+            perror("BINDER ERROR: TERMINATE Send message to servers type error\n");
+            return -21; // ERROR -21
         }
 //        printf("Binder sends termination message type succeed: %zd\n", operationResult);
         
@@ -713,8 +713,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         operationResult = -1;
         operationResult = send(eachServerSocket, &messageBody, messageLength, 0);
         if (operationResult != messageLength) {
-            perror("Binder termination message to server: Send message body failed\n");
-            return -1;
+            perror("BINDER ERROR: TERMINATE Send message to servers body error\n");
+            return -22; // ERROR -22
         }
 //        printf("Binder sends termination message body succeed: %zd\n", operationResult);
     }
