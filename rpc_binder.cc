@@ -376,20 +376,19 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Binder sends response type failed\n");
-        return -1;
+        perror("BINDER ERROR: Send response type failed\n");
+        return -8; // ERROR -8
     }
     
     // Send response error code
     operationResult = -1;
     operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Binder sends response errorCode failed\n");
-        return -1;
+        perror("BINDER ERROR: Send response errorCode failed\n");
+        return -9; // ERROR -9
     }
     //    printf("Binder responseType: %d, errorCode: %d\n", responseType, errorCode);
-    
-    return 0;
+    return errorCode;
 }
 
 
@@ -403,16 +402,20 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     int lastSeperatorIndex = -1;
     int messageCount = 0;
     
-    enum messageType responseType = REGISTER_SUCCESS;
     // Process message body, initialize ip, port, name, argTypes
-    for (int i = 0; i < messageBodySize && responseType == REGISTER_SUCCESS; i++) {
+    for (int i = 0; i < messageBodySize; i++) {
         if (messageBody[i] == ',') {
             switch (messageCount) {
                 case 0: {
                     uint32_t sizeOfIp = i - (lastSeperatorIndex + 1);
                     if (sizeOfIp > 16) {
                         // Size is too large
-                        responseType = REGISTER_FAILURE;
+                        if (ipv4Address != NULL) free(ipv4Address);
+                        if (name != NULL) free(name);
+                        if (argTypes != NULL) free(argTypes);
+                        if (messageBody != NULL) free(messageBody);
+                        perror("BINDER ERROR: REGISTER Wrong IP size (>16)\n");
+                        return binderResponse(connectionSocket, REGISTER_FAILURE, -10);
                     }
 //                    printf("%d\n", sizeOfIp);
                     ipv4Address = (char*)malloc(sizeof(char) * sizeOfIp);
@@ -422,8 +425,13 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                 case 1: {
                     uint32_t sizeOfPort = i - (lastSeperatorIndex + 1);
                     if (sizeOfPort != sizeof(portNumber)) {
-                        perror("port size error\n");
-                        responseType = REGISTER_FAILURE;
+                        // Size is too large
+                        if (ipv4Address != NULL) free(ipv4Address);
+                        if (name != NULL) free(name);
+                        if (argTypes != NULL) free(argTypes);
+                        if (messageBody != NULL) free(messageBody);
+                        perror("BINDER ERROR: REGISTER Wrong port size (!= 4)\n");
+                        return binderResponse(connectionSocket, REGISTER_FAILURE, -11);
                     }
                     memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
                     break;
@@ -441,8 +449,12 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                     break;
                 }
                 default:
-                    perror("Message Body Error\n");
-                    responseType = REGISTER_FAILURE;
+                    if (ipv4Address != NULL) free(ipv4Address);
+                    if (name != NULL) free(name);
+                    if (argTypes != NULL) free(argTypes);
+                    if (messageBody != NULL) free(messageBody);
+                    perror("BINDER ERROR: REGISTER Wrong message body\n");
+                    return binderResponse(connectionSocket, REGISTER_FAILURE, -12);
                     break;
             }
             lastSeperatorIndex = i;
@@ -450,33 +462,22 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
         }
     }
     // Process completed
-    
     printf("Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
-//    printf("ArgTypes: ");
-//    for (int i = 0; i < argTypesLength(argTypes); i++) {
-//        printf("%ud ", argTypes[i]);
-//    }
-//    printf("\n");
     
-    // If message is correct, register, else free
-    if (responseType == REGISTER_SUCCESS) {
-        // Store this procedure in binder's data store
-        P_NAME_TYPES procedureNameTypes(name, argTypes);
-        P_NAME_TYPES_SOCKET procedureKey(procedureNameTypes, connectionSocket);
-        P_IP_PORT ID(ipv4Address, portNumber);
-        binderProcedureToID.insert(procedureKey, ID);
-    } else  {
-        free(ipv4Address);
-        free(name);
-        free(argTypes);
-    }
-    binderResponse(connectionSocket, responseType, 1);
-    if (responseType == REGISTER_SUCCESS) {
-        return 0;
-    } else {
-        return -1;
-//        return 0;
-    }
+    // If message is correct, register in local database
+    P_NAME_TYPES procedureNameTypes(name, argTypes);
+    P_NAME_TYPES_SOCKET procedureKey(procedureNameTypes, connectionSocket);
+    P_IP_PORT ID(ipv4Address, portNumber);
+    binderProcedureToID.insert(procedureKey, ID);
+    
+    // Clean
+    if (ipv4Address != NULL) free(ipv4Address);
+    if (name != NULL) free(name);
+    if (argTypes != NULL) free(argTypes);
+    if (messageBody != NULL) free(messageBody);
+    
+    // Send back register success
+    return binderResponse(connectionSocket, REGISTER_SUCCESS, 0);
 }
 
 /**
