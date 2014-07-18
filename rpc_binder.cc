@@ -362,8 +362,9 @@ int binderDealWithData(int connectionNumber) {
             return -7; // ERROR -7
             break;
     }
+    // Never goes here
     if (messageBody != NULL) free(messageBody);
-    return 0; // Never goes here
+    return 0;
 }
 
 // Server send back response
@@ -471,9 +472,6 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
     int insertResult = binderProcedureToID.insert(procedureKey, ID);
     
     // Clean
-    if (ipv4Address != NULL) free(ipv4Address);
-    if (name != NULL) free(name);
-    if (argTypes != NULL) free(argTypes);
     if (messageBody != NULL) free(messageBody);
     
     // Send back register success (0: success, 1: replaced)
