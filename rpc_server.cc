@@ -583,7 +583,7 @@ int serverDealWithData(int connectionNumber) {
 }
 
 void* serverHandleNewExecution(void *t) {
-//    printf("New thread start\n");
+    printf("New thread start\n");
     threadArgs p_args = *(threadArgs *)t;
     BYTE *messageBody = p_args.messageBody;
     int connectionSocket = p_args.connectionSocket;
@@ -618,6 +618,7 @@ void* serverHandleNewExecution(void *t) {
                     if (sizeOfArgsByte != argsSize(argTypes)) {
                         if (name != NULL) free(name);
                         if (argTypes != NULL) free(argTypes);
+                        if (messageBody != NULL) free(messageBody);
                         perror("SERVER ERROR: EXECUTE argTypes size error\n");
                         serverResponse(connectionSocket, EXECUTE_FAILURE, -53); //Error -53
                         pthread_exit((void*) 0);
@@ -630,6 +631,7 @@ void* serverHandleNewExecution(void *t) {
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
                     if (argsByte != NULL) free(argsByte);
+                    if (messageBody != NULL) free(messageBody);
                     perror("SERVER ERROR: EXECUTE Message body size error\n");
                     serverResponse(connectionSocket, EXECUTE_FAILURE, -54); //Error -54
                     pthread_exit((void*) 0);
@@ -647,52 +649,56 @@ void* serverHandleNewExecution(void *t) {
     //    }
     //    printf("\n");
     
-    //    printOutArgsByte(argTypes, argsByte);
+    printOutArgsByte(argTypes, argsByte);
     
     
     // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
     // BYTE *argsByte)
     args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
-    if (argsByteToArgs(argTypes, argsByte, args)) {
-//        printf("args init succeed!\n");
-    } else {
-        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
+    if (!argsByteToArgs(argTypes, argsByte, args)) {
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
+        perror("SERVER ERROR: EXECUTE Init args failed\n");
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -55); //Error -55
         pthread_exit((void*) 0);;
     }
     
-    //    printOutArgs(argTypes, args);
+    printOutArgs(argTypes, args);
     
     P_NAME_TYPES queryKey(name, argTypes);
     
     // Execute
     skeleton f = serverProcedureToSkeleton.findSkeleton(queryKey);
     if (f == NULL) {
-//        printf("591: %s skeleton is null\n", name);
-    }
-    
-    int executionResult = f(argTypes, args);
-    if (executionResult < 0) {
-        std::cerr << name <<" executes failed!\n";
-        // Send EXECUTE_FAILURE
-        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
-        // Free allocated varilables
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
-        pthread_exit((void*) 0);;
+        perror("SERVER ERROR: EXECUTE Skeleton not found\n");
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -56); //Error -56
+        pthread_exit((void*) 0);
+    }
+    
+    int executionResult = f(argTypes, args);
+    if (executionResult < 0) {
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (argsByte != NULL) free(argsByte);
+        if (args != NULL) free(args);
+        if (messageBody != NULL) free(messageBody);
+        perror("SERVER ERROR: EXECUTE Execute failed\n");
+        serverResponse(connectionSocket, EXECUTE_FAILURE, -57); //Error -57
+        pthread_exit((void*) 0);
     }
 //    printf("EXE succeed\n");
     // Send EXECUTE_SUCCESS
-    serverResponse(p_args.connectionSocket, EXECUTE_SUCCESS, 0);
+    serverResponse(connectionSocket, EXECUTE_SUCCESS, executionResult);
     
-    //    printOutArgs(argTypes, args);
+    printOutArgs(argTypes, args);
     
     // Send back execution result
     // Message body: [name,argTypes,argsByte,]
@@ -702,8 +708,14 @@ void* serverHandleNewExecution(void *t) {
     uint32_t totalSize = sizeOfName + sizeOfArgTypes + sizeOfArgsByte + 3;
     // Send back size should equal to messagelength
     if (p_args.messageLength != totalSize) {
-        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
-        pthread_exit((void*) 0);;
+//        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (argsByte != NULL) free(argsByte);
+        if (args != NULL) free(args);
+        if (messageBody != NULL) free(messageBody);
+        perror("SERVER ERROR: EXECUTE Send back execution message length failed\n");
+        pthread_exit((void*) 0);
     }
     // Prepare messageBody
     BYTE messageBodyResponse[totalSize];
@@ -733,14 +745,22 @@ void* serverHandleNewExecution(void *t) {
     ssize_t operationResult = -1;
     operationResult = send(p_args.connectionSocket, &messageBodyResponse, totalSize, 0);
     if (operationResult != totalSize) {
-        perror("Server to client: Send [name, argTypes, argsByte,] failed\n");
-        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, 0);
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
         if (argsByte != NULL) free(argsByte);
         if (args != NULL) free(args);
         if (messageBody != NULL) free(messageBody);
-        pthread_exit((void*) 0);;
+        perror("SERVER ERROR: EXECUTE Send back execution result failed\n");
+        pthread_exit((void*) 0);
+        
+//        perror("Server to client: Send [name, argTypes, argsByte,] failed\n");
+//        serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, 0);
+//        if (name != NULL) free(name);
+//        if (argTypes != NULL) free(argTypes);
+//        if (argsByte != NULL) free(argsByte);
+//        if (args != NULL) free(args);
+//        if (messageBody != NULL) free(messageBody);
+//        pthread_exit((void*) 0);;
     }
     
     // Free allocated varilables
@@ -751,5 +771,5 @@ void* serverHandleNewExecution(void *t) {
     if (messageBody != NULL) free(messageBody);
     
 //    printf("New thread end\n");
-    pthread_exit((void*) 0);;
+    pthread_exit((void*) 0);
 }
