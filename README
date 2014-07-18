@@ -1,49 +1,53 @@
 CS 454 Assignment 3
 
-Instructions for generating and using static library (.a)
-
-g++ -c rpc.cc => rpc.o
-g++ -c client1.cc => client1.o
-
-ar rcs librpc.a rpc.o => librpc.a
-ranlib librpc.a => index the librpc.a
-
-g++ client1.o rpc.o -L. -lrpc -o client1 => client executable
-
-
-
 Instructions for program
 
 Commands:
  	$ make 
-		this command compiles stringClient
+		this command generates rpc_binder.o rpc_server.o rpc_client.o rpc_helper.o pmap.o files and executable file binder
 
 	$ make clean
-		remove all executable files e.g. stringClient, stringServer
+		remove all executable files and linkable files e.g. binder rpc_server.o
 
-	$ ./stringServer
-		run server program before run client. 
+	$ ./binder
+		run binder program before run server and client. 
 		server will print out its server address and next available port
 		
-	$ export SERVER_ADDRESS=“hostname”
-	$ export SERVER_PORT=“#port#”
+	$ export BINDER_ADDRESS=“hostname”
+	$ export BINDER_PORT=“#port#”
 		to set the env variable, and client will get them from client side
 
-	$ ./stringClient
-		run client program after server has been started.
+	$ g++ -c client.cc server.cc
+		generate a client.o server. files
+	$ g++ -L. client.o -lrpc client
+		generate an executable file client by using rpc library
+	$ g++ -L. server.o server_functions.o server_function_skels.o -lrpc server -lpthread
+		generate an executable file server by using roc library
+		please add lpthread flag since our server uses multi-threading to handle
+		client requests
+	$ ./server
+		run server to register itself on binder
+	$./client
+		run client to execute remote procedure call 
 
 Instruction to run program:
-	- place code files in same directory than makefile and input file.
+	- place code files in same directory than makefile.
 	- execute make in order to compile the c++ files
-        - then run the stringServer
-	- run the stringClient
-	- send any string from client to server and you will get feedback from server
+        - then run the binder to show the ip and port number of binder
+	- run the server next to show the ip host and port number of server
+	- run client after all binder and servers started
+
+        ************* notice *****************
+	if the ip is a local host(e.g. 127.0.0.1) ip instead of a real(external) ip address,
+	the program on different machines will not connect successfully since the ip is not real
+	In this case, please to change a machine to run our binder and server
+	so that to get a real ip of both binder and server.
 
 Executable files:
-	After make, you will get stringClient and stringServer
+	After make, you will get librpc.a
 
 undergrad machine tested on:
-			ubuntu1204-002.student.cs.uwaterloo.ca
+			ubuntu1204-002.student.cs.uwaterloo.ca (sometimes cannot get a real ip)
 			ubuntu1204-004.student.cs.uwaterloo.ca
 			ubuntu1204-006.student.cs.uwaterloo.ca
 
@@ -52,4 +56,9 @@ Version of makefile:
 
 Version of c++ compiler:
 			gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5)
+Group member
+		Chao Chen (c99chen)
+		Honghao Zhang (h344zhan)
+
+
 
