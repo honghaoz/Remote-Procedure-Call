@@ -776,7 +776,8 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     P_NAME_TYPES key(name,argTypes);
     P_IP_PORT* serverIpPort = NULL;
     serverIpPort = clientDataBase.findIp_cached(key);
-    P_IP_PORT IpPort = *serverIpPort;
+    P_IP_PORT IpPort;
+    if(serverIpPort != NULL) IpPort = *serverIpPort;
     while(serverIpPort != NULL){
         int portnum = serverIpPort->second;
         char* server_host = serverIpPort->first;
@@ -790,7 +791,7 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         server_sockfd = Connection(server_host, server_port);
         std::cout<<"Cached Call: server socket fd is: "<<server_sockfd<<std::endl;
         if(server_sockfd < 0){
-            std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
+            std::cerr<<"Server Connection Error Occur!"<<std::endl;
             return -1;
         }
 
@@ -804,15 +805,14 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
             serverIpPort = clientDataBase.findIp_cached(key);
             if(clientDataBase.isIpPortEqual(*serverIpPort, IpPort)){
                 clientDataBase.clear_vecIpForCached(key);
-                int retcode = rpcCacheCall(name, argTypes, args);
-                return retcode;
+                serverIpPort = NULL;
+                break;
             }
             continue;
         }
         close(server_sockfd);
         return 0;
     }
-    
     int binder_fd;
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
@@ -820,14 +820,14 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         return -1;
     }
     
-    std::cout<<"send cache loc request\n"<<std::endl;
+    std::cout<<"send cache loc request"<<std::endl;
     int reasoncode = CachedLocationRequest(name, argTypes,binder_fd);
     if(reasoncode != 0){
         perror("CachedCall: failed to send location request to binder\n");
         return reasoncode;
     }
     
-    std::cout<<"waiting binder response\n"<<std::endl;
+    std::cout<<"waiting binder response"<<std::endl;
     reasoncode = clientHandleBinderResponseForCachedCall(binder_fd);
     if(reasoncode != 0){
         perror("CachedCall: failed to handle response from binder\n");
