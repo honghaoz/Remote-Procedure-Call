@@ -82,9 +82,17 @@ void printBitRepresentation(BYTE *x, int byteNumber) {
     }
     //    printf("%s\n", bits);
 }
-
-// Return length of argTypes, includes last 0
+/**
+ *  Return length of argTypes, includes last 0
+ *
+ *  @param argTypes (int *) argTypes
+ *
+ *  @return Length of arguments in argTypes (include last 0)
+ */
 uint32_t argTypesLength(int *argTypes) {
+    if (argTypes == NULL) {
+        return 0;
+    }
     uint32_t i = 0;
     while (argTypes[i] != 0) {
         i++;
@@ -92,6 +100,14 @@ uint32_t argTypesLength(int *argTypes) {
     return i + 1;
 }
 
+/**
+ *  Compare two argTypes
+ *
+ *  @param argTypes1 (int *) argTypes1
+ *  @param argTypes2 (int *) argTypes2
+ *
+ *  @return true: equal, false: not equal
+ */
 bool argTypesEqual(int *argTypes1, int *argTypes2) {
     int length1 = argTypesLength(argTypes1);
     int length2 = argTypesLength(argTypes2);
@@ -105,7 +121,13 @@ bool argTypesEqual(int *argTypes1, int *argTypes2) {
     return true;
 }
 
-// Return size of type from an integer in argTypes
+/**
+ *  Return size of a argument type
+ *
+ *  @param argInteger Six fixed types
+ *
+ *  @return Size of this type
+ */
 uint32_t argSize(uint32_t argInteger) {
     int argType = (argInteger & ARG_TYPE_MASK) >> 16;
     switch (argType) {
@@ -134,7 +156,13 @@ uint32_t argSize(uint32_t argInteger) {
     }
 }
 
-// Return total size of args
+/**
+ *  Return total size of argTypes
+ *
+ *  @param argTypes (int *) argTypes
+ *
+ *  @return Total size of argTypes
+ */
 uint32_t argsSize(int *argTypes) {
     uint32_t result = 0;
     uint32_t lengthOfTypes = argTypesLength(argTypes);
@@ -149,7 +177,19 @@ uint32_t argsSize(int *argTypes) {
     return result;
 }
 
+/**
+ *  Convert argsByte to args
+ *
+ *  @param argTypes (int *)argTypes
+ *  @param argsByte (BYTE *)argsByte (Must be not NULL)
+ *  @param args     (void **)args
+ *
+ *  @return Execution result
+ */
 bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args) {
+    if (argTypes == NULL || argsByte == NULL || args == NULL) {
+        return false;
+    }
 //    args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     int offset = 0;
     int argIndex = 0;
@@ -205,6 +245,11 @@ bool argsByteToArgs(int * &argTypes, BYTE * &argsByte, void ** &args) {
     return true;
 }
 
+/**
+ *  Print out argTypes in binary number
+ *
+ *  @param argTypes argTypes
+ */
 void printOutArgTypes(int *argTypes) {
     printf("ArgTypes: \n");
     for (int i = 0; i < argTypesLength(argTypes); i++) {
@@ -213,7 +258,12 @@ void printOutArgTypes(int *argTypes) {
     printf("\n");
 }
 
-// print out args
+/**
+ *  Print out args in an elegant way
+ *
+ *  @param argTypes argTypes
+ *  @param args     args
+ */
 void printOutArgs(int * &argTypes, void ** &args) {
     printf("args: \n");
     for (int i = 0; i < argTypesLength(argTypes) - 1; i++) {
@@ -355,6 +405,12 @@ void printOutArgs(int * &argTypes, void ** &args) {
     printf("\n");
 }
 
+/**
+ *  Print out argsByte in an elegant way
+ *
+ *  @param argTypes argTypes
+ *  @param argsByte argsByte
+ */
 void printOutArgsByte(int * &argTypes, BYTE * &argsByte) {
     printf("argsByte: \n");
     int offset = 0;

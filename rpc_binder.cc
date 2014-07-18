@@ -271,7 +271,14 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
 int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber);
 
-// Receive message length, message type and allocate message body
+/**
+ *  Receive message length, message type and allocate message body
+ *  According message type, call corresponding function
+ *
+ *  @param connectionNumber the index for active socket in binderConnections
+ *
+ *  @return Execution result
+ */
 int binderDealWithData(int connectionNumber) {
     // Get the socket descriptor
     int connectionSocket = binderConnections[connectionNumber];
@@ -367,6 +374,15 @@ int binderDealWithData(int connectionNumber) {
     return 0;
 }
 
+/**
+ *  Binder response responseType and errorCode with connectionSocket
+ *
+ *  @param connectionSocket Socket descriptor for the connection
+ *  @param responseType     Response message type
+ *  @param errorCode        Error code
+ *
+ *  @return errorCode
+ */
 // Server send back response
 int binderResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
     // Send response message to server
@@ -392,7 +408,16 @@ int binderResponse(int connectionSocket, messageType responseType, uint32_t erro
     return errorCode;
 }
 
-
+/**
+ *  Deal with REGISTER message type
+ *  Insert new procedure in binder's local database
+ *
+ *  @param connectionSocket Socket descriptor for binder for servers
+ *  @param messageBody      Received message body [ip,portnum,name,argTypes,]
+ *  @param messageBodySize  Size of messageBody in byte
+ *
+ *  @return Execution result (1 for replaced procedure warning)
+ */
 int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
     // Message body: [ip,portnum,name,argTypes,]
     char *ipv4Address = NULL;
@@ -415,7 +440,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                         if (name != NULL) free(name);
                         if (argTypes != NULL) free(argTypes);
                         if (messageBody != NULL) free(messageBody);
-                        perror("BINDER ERROR: REGISTER Wrong IP size (>16)\n");
+                        perror("BINDER ERROR: REGISTER Wrong IP size (>16)\n");// ERROR -10
                         return binderResponse(connectionSocket, REGISTER_FAILURE, -10);
                     }
 //                    printf("%d\n", sizeOfIp);
@@ -431,7 +456,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                         if (name != NULL) free(name);
                         if (argTypes != NULL) free(argTypes);
                         if (messageBody != NULL) free(messageBody);
-                        perror("BINDER ERROR: REGISTER Wrong port size (!= 4)\n");
+                        perror("BINDER ERROR: REGISTER Wrong port size (!= 4)\n");// ERROR -11
                         return binderResponse(connectionSocket, REGISTER_FAILURE, -11);
                     }
                     memcpy(&portNumber, messageBody + lastSeperatorIndex + 1, sizeOfPort);
@@ -454,7 +479,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
                     if (messageBody != NULL) free(messageBody);
-                    perror("BINDER ERROR: REGISTER Wrong message body\n");
+                    perror("BINDER ERROR: REGISTER Wrong message body\n");// ERROR -12
                     return binderResponse(connectionSocket, REGISTER_FAILURE, -12);
                     break;
             }
@@ -463,7 +488,7 @@ int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize
         }
     }
     // Process completed
-    printf("Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
+    printf("    Registered: IP: %s, Port: %d, Name: %s\n", ipv4Address, portNumber, name);
     
     // If message is correct, register in local database
     P_NAME_TYPES procedureNameTypes(name, argTypes);
@@ -497,7 +522,7 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     int messageCount = 0;
     
     // Process message body, initialize ip, port, name, argTypes
-    for (int i = 0; i < messageBodySize /*&& responseType == LOC_SUCCESS*/; i++) {
+    for (int i = 0; i < messageBodySize; i++) {
         if (messageBody[i] == ',') {
             switch (messageCount) {
                 case 0: {
@@ -513,39 +538,34 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
                     break;
                 }
                 default:
-                    perror("Message Body Error\n");
-//                    responseType = LOC_FAILURE;
-                    binderResponse(connectionSocket, LOC_FAILURE, -1);
+                    if (ipv4Address != NULL) free(ipv4Address);
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
-                    return -1;
+                    if (messageBody != NULL) free(messageBody);
+                    perror("BINDER ERROR: LOC Wrong message body\n");// ERROR -13
+                    return binderResponse(connectionSocket, LOC_FAILURE, -13);
                     break;
             }
             lastSeperatorIndex = i;
             messageCount++;
         }
     }
-//    printf("Locate: %s\n", name);
-//    printf("Locate ArgTypes: ");
-//    for (int i = 0; i < argTypesLength(argTypes); i++) {
-//        printf("%ud ", argTypes[i]);
-//    }
-//    printf("\n");
     
     P_NAME_TYPES queryKey(name, argTypes);
     P_IP_PORT *queryResult = binderProcedureToID.findIp_client(queryKey);
     if (queryResult == NULL) {
-        perror("Procedure Not found");
-        binderResponse(connectionSocket, LOC_FAILURE, -1);
+        if (ipv4Address != NULL) free(ipv4Address);
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
-//        return 0;
-        return -1;
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC Procedure not found\n");// ERROR -14
+        return binderResponse(connectionSocket, LOC_FAILURE, -14);
     }
     ipv4Address = queryResult->first;
     portNumber = queryResult->second;
-    printf("Locate: %s, found IP: %s, Port: %d\n", name, ipv4Address, portNumber);
+    printf("    Locate: %s, found IP: %s, Port: %d\n", name, ipv4Address, portNumber);
     
+    // Response LOC_SUCCESS
     binderResponse(connectionSocket, LOC_SUCCESS, 0);
     
     // Send back founded IP and Port
@@ -570,25 +590,34 @@ int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &messageBodyResponse, totalSize, 0);
     if (operationResult != totalSize) {
-        perror("Binder to server: Send ip+portnum failed\n");
-//        return 0;
-        return -1;
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC Send IP+Port failed\n");// ERROR -15
+        return -15;
     }
 //    printf("Response located IP: %s\n", ipv4Address);
 //    printf("Response located Port: %d\n", portNumber);
     
     if (name != NULL) free(name);
     if (argTypes != NULL) free(argTypes);
+    if (messageBody != NULL) free(messageBody);
     return 0;
 }
 
+/**
+ *  Use received message to find all available servers, response a list of IPs and Port numbers
+ *
+ *  @param connectionSocket Socket descriptor for binder for client
+ *  @param messageBody      [name,argTypes,]
+ *  @param messageBodySize  size for [name,argTypes,]
+ *
+ *  @return Execute result
+ */
 int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
     // Message body: [name,argTypes,]
     char *name = NULL;
     int *argTypes = NULL;
-#warning meeeeee
-    char *ipv4Address = NULL;
-    int portNumber = 0;
     
     int lastSeperatorIndex = -1;
     int messageCount = 0;
@@ -610,12 +639,11 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
                     break;
                 }
                 default:
-                    perror("Message Body Error\n");
-                    //                    responseType = LOC_FAILURE;
-                    binderResponse(connectionSocket, LOC_FAILURE, -1);
                     if (name != NULL) free(name);
                     if (argTypes != NULL) free(argTypes);
-                    return -1;
+                    if (messageBody != NULL) free(messageBody);
+                    perror("BINDER ERROR: LOC_CACHED Wrong message body\n");// ERROR -16
+                    return binderResponse(connectionSocket, LOC_CACHED_FAILURE, -16);
                     break;
             }
             lastSeperatorIndex = i;
@@ -628,12 +656,11 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
     std::vector<P_IP_PORT> queryResult = binderProcedureToID.findIpList_client(queryKey);
     // If no any ip/port found
     if (queryResult.size() == 0) {
-        perror("Procedure Not found");
-        binderResponse(connectionSocket, LOC_CACHED_FAILURE, -1);
         if (name != NULL) free(name);
         if (argTypes != NULL) free(argTypes);
-        //        return 0;
-        return -1;
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC_CACHED Procedure not found\n");// ERROR -17
+        return binderResponse(connectionSocket, LOC_CACHED_FAILURE, -17);
     }
     
     // Send back founded IP/Ports
@@ -660,31 +687,47 @@ int binderDealWithCachedLocateMessage(int connectionSocket, BYTE *messageBody, s
     ssize_t operationResult = -1;
     operationResult = send(connectionSocket, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
-        perror("Binder cached call response to client: Send message length failed\n");
-        return -1;
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports length error\n");
+        return -18; // ERROR -18
     }
-    printf("Binder cached call send message length succeed: %zd\n", operationResult);
+//    printf("Binder cached call send message length succeed: %zd\n", operationResult);
     
     // Send message body (varied bytes)
     operationResult = -1;
     operationResult = send(connectionSocket, &messageBodyResponse, messageLength, 0);
     if (operationResult != messageLength) {
-        perror("Binder cached call response to binder: Send message body failed\n");
-        return -1;
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (messageBody != NULL) free(messageBody);
+        perror("BINDER ERROR: LOC_CACHED Send Ip+Ports body failed\n");
+        return -19; // ERROR -19
     }
-    printf("Binder cached call send message body succeed: %zd\n", operationResult);
-    return 0;
+//    printf("Binder cached call send message body succeed: %zd\n", operationResult);
+    return 0; //SUCCESS
 }
 
-
+/**
+ *  Hanlde terminate message from client, send terminate messages to all
+ *  connected servers
+ *
+ *  @param connectionSocket Socket descriptor for binder for client
+ *  @param messageBody      NULL
+ *  @param messageBodySize  0
+ *  @param connectionNumber index for connectionSocket in binderConnections
+ *
+ *  @return Execution result
+ */
 int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize, int connectionNumber) {
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
-//        printf("Check %dth socket\n", i);
         // If this is socket for client, continue
         if (i == connectionNumber) continue;
         int eachServerSocket = binderConnections[i];
         if (eachServerSocket == 0) continue;
         // For each serverSocket, send out Terminate message
+        free(messageBody);
         BYTE* messageBody = NULL;
         
         // Prepare first 8 bytes: Length(4 bytes) + Type(4 bytes)
@@ -697,8 +740,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         ssize_t operationResult = -1;
         operationResult = send(eachServerSocket, &messageLength_network, sizeof(uint32_t), 0);
         if (operationResult != sizeof(uint32_t)) {
-            perror("Binder termination message to server: Send message length failed\n");
-            return -1;
+            perror("BINDER ERROR: TERMINATE Send message to servers length error\n");
+            return -20; // ERROR -20
         }
 //        printf("Binder sends termination message length succeed: %zd\n", operationResult);
         
@@ -706,8 +749,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         operationResult = -1;
         operationResult = send(eachServerSocket, &messageType_network, sizeof(uint32_t), 0);
         if (operationResult != sizeof(uint32_t)) {
-            perror("Binder termination message to server: Send message type failed\n");
-            return -1;
+            perror("BINDER ERROR: TERMINATE Send message to servers type error\n");
+            return -21; // ERROR -21
         }
 //        printf("Binder sends termination message type succeed: %zd\n", operationResult);
         
@@ -715,8 +758,8 @@ int binderDealWithTerminateMessage(int connectionSocket, BYTE *messageBody, ssiz
         operationResult = -1;
         operationResult = send(eachServerSocket, &messageBody, messageLength, 0);
         if (operationResult != messageLength) {
-            perror("Binder termination message to server: Send message body failed\n");
-            return -1;
+            perror("BINDER ERROR: TERMINATE Send message to servers body error\n");
+            return -22; // ERROR -22
         }
 //        printf("Binder sends termination message body succeed: %zd\n", operationResult);
     }
