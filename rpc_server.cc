@@ -650,11 +650,11 @@ void* serverHandleNewExecution(void *t) {
 //        printf("args init succeed!\n");
     } else {
         serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
-        free(name);
-        free(argTypes);
-        free(argsByte);
-        free(args);
-        free(messageBody);
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (argsByte != NULL) free(argsByte);
+        if (args != NULL) free(args);
+        if (messageBody != NULL) free(messageBody);
         pthread_exit((void*) 0);;
     }
     
@@ -674,11 +674,11 @@ void* serverHandleNewExecution(void *t) {
         // Send EXECUTE_FAILURE
         serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
         // Free allocated varilables
-        free(name);
-        free(argTypes);
-        free(argsByte);
-        free(args);
-        free(messageBody);
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (argsByte != NULL) free(argsByte);
+        if (args != NULL) free(args);
+        if (messageBody != NULL) free(messageBody);
         pthread_exit((void*) 0);;
     }
 //    printf("EXE succeed\n");
@@ -728,20 +728,20 @@ void* serverHandleNewExecution(void *t) {
     if (operationResult != totalSize) {
         perror("Server to client: Send [name, argTypes, argsByte,] failed\n");
         serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, 0);
-        free(name);
-        free(argTypes);
-        free(argsByte);
-        free(args);
-        free(messageBody);
+        if (name != NULL) free(name);
+        if (argTypes != NULL) free(argTypes);
+        if (argsByte != NULL) free(argsByte);
+        if (args != NULL) free(args);
+        if (messageBody != NULL) free(messageBody);
         pthread_exit((void*) 0);;
     }
     
     // Free allocated varilables
-    free(name);
-    free(argTypes);
-    free(argsByte);
-    free(args);
-    free(messageBody);
+    if (name != NULL) free(name);
+    if (argTypes != NULL) free(argTypes);
+    if (argsByte != NULL) free(argsByte);
+    if (args != NULL) free(args);
+    if (messageBody != NULL) free(messageBody);
     
 //    printf("New thread end\n");
     pthread_exit((void*) 0);;
