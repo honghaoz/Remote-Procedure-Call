@@ -286,15 +286,15 @@ int rpcRegister(char* name, int* argTypes, skeleton f) {
 //    printf("\n");
 //
 //    printf("IP: %s\n", ipv4Address);
-    printf("Port: %d\n", portNumber);
-    printf("Name: %s\n", name);
+//    printf("Port: %d\n", portNumber);
+//    printf("Name: %s\n", name);
 //    printf("ArgTypes: ");
 //    for (int i = 0; i < argTypesLength(argTypes); i++) {
 //        printf("%ud ", argTypes[i]);
 //    }
 //    printf("\n");
     
-    printf("\n");
+//    printf("\n");
     
     // 3,  Receive registration response from binder
     return serverHandleResponse(serverToBinderSocket);
@@ -330,7 +330,7 @@ int serverHandleResponse(int connectionSocket) {
         std::cerr << "Binder response: REGISTER_FAILURE Error Code: " << responseErrorCode << std::endl;
         return responseErrorCode;
     } else if (responseType == REGISTER_SUCCESS) {
-        printf("Binder response: REGISTER_SUCCESS\n");
+//        printf("Binder response: REGISTER_SUCCESS\n");
         return 0;
     } else {
         return 0;
@@ -372,7 +372,7 @@ int rpcExecute() {
         if (numberOfReadSockets > 0) {
             if (serverReadSockets() == SERVER_TERMINATE) {
                 //return -1;
-                printf("Server will terminate\n");
+//                printf("Server will terminate\n");
                 break;
             }
         }
@@ -434,7 +434,7 @@ int serverHandleNewConnection() {
     // Add this new client to clients
     for (int i = 0; (i < MAX_NUMBER_OF_CLIENTS) && (i != -1); i++) {
         if (serverConnections[i] == 0) {
-            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
+//            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
             pthread_mutex_lock(&mutex);
             serverConnections[i] = newSock;
             pthread_mutex_unlock(&mutex);
@@ -472,7 +472,7 @@ int serverResponse(int connectionSocket, messageType responseType, uint32_t erro
         perror("Server sends response errorCode failed\n");
         return -1;
     }
-    printf("Server responseType: %d, errorCode: %d\n", responseType, errorCode);
+//    printf("Server responseType: %d, errorCode: %d\n", responseType, errorCode);
     return 0;
 }
 
@@ -494,7 +494,7 @@ int serverDealWithData(int connectionNumber) {
     receivedSize = recv(connectionSocket, &messageLength_network, sizeof(uint32_t), 0);
     // Connection lost
     if (receivedSize == 0) {
-        printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
+//        printf("\nConnection lost: FD=%d;  Slot=%d\n", connectionSocket, connectionNumber);
         close(connectionSocket);
         
         // Set this place to be available
@@ -511,7 +511,7 @@ int serverDealWithData(int connectionNumber) {
         return 0;
     }
     else { // Receive message length correctly
-        printf("Received length of message length: %zd\n", receivedSize);
+//        printf("Received length of message length: %zd\n", receivedSize);
         //        serverResponse(connectionSocket, EXECUTE_FAILURE, -1);
         messageLength = ntohl(messageLength_network);
     }
@@ -525,18 +525,18 @@ int serverDealWithData(int connectionNumber) {
 //        pthread_exit((void*) 0);
         return 0;
     } else { // Receive message length correctly
-        printf("Received length of message type: %zd\n", receivedSize);
+//        printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
     }
     // Server should terminate
     if (messageType == TERMINATE) {
-        printf("Server received TERMINATE message\n");
-        printf("Authenticating... ");
+//        printf("Server received TERMINATE message\n");
+//        printf("Authenticating... ");
         if (connectionSocket == serverToBinderSocket) {
-            printf("message comes from binder. Accept\n");
+//            printf("message comes from binder. Accept\n");
             return SERVER_TERMINATE;
         }
-        printf("message doesn't come from binder. Reject\n");
+//        printf("message doesn't come from binder. Reject\n");
     }
     
     // If type is not EXECUTE
@@ -558,7 +558,7 @@ int serverDealWithData(int connectionNumber) {
 //        pthread_exit((void*) 0);
         return 0;
     }
-    printf("Received length of message body: %zd\n", receivedSize);
+//    printf("Received length of message body: %zd\n", receivedSize);
     
     // 2, Dispatch a new thread to handle procedure execution
     threadArgs args;
@@ -570,15 +570,15 @@ int serverDealWithData(int connectionNumber) {
     pthread_t newExecutionThread;
     int threadCreatedResult = pthread_create(&newExecutionThread, NULL, serverHandleNewExecution, (void *)&args);
     if (threadCreatedResult != 0) {
-        printf("Dispatch new execution thread failed: %d\n", threadCreatedResult);
+//        printf("Dispatch new execution thread failed: %d\n", threadCreatedResult);
         return -1;
     }
-    printf("Dispatch new execution thread succeed\n");
+//    printf("Dispatch new execution thread succeed\n");
     return 0;
 }
 
 void* serverHandleNewExecution(void *t) {
-    printf("New thread start\n");
+//    printf("New thread start\n");
     threadArgs p_args = *(threadArgs *)t;
     BYTE *messageBody = p_args.messageBody;
     
@@ -610,14 +610,14 @@ void* serverHandleNewExecution(void *t) {
                 }
                 case 2: {
                     uint32_t sizeOfArgsByte = i - (lastSeperatorIndex + 1);
-                    printf("Expected: %d, Actual: %d\n", argsSize(argTypes), sizeOfArgsByte);
+//                    printf("Expected: %d, Actual: %d\n", argsSize(argTypes), sizeOfArgsByte);
                     assert(sizeOfArgsByte == argsSize(argTypes));
                     argsByte = (BYTE *)malloc(sizeof(BYTE) * sizeOfArgsByte);
                     memcpy(argsByte, messageBody + lastSeperatorIndex + 1, sizeOfArgsByte);
                     break;
                 }
                 default:
-                    perror("Message Body Error\n");
+//                    perror("Message Body Error\n");
                     //                    responseType = EXECUTE_FAILURE;
                     serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
                     free(name);
@@ -647,7 +647,7 @@ void* serverHandleNewExecution(void *t) {
     // BYTE *argsByte)
     args = (void **)malloc((argTypesLength(argTypes) - 1) * sizeof(void *));
     if (argsByteToArgs(argTypes, argsByte, args)) {
-        printf("args init succeed!\n");
+//        printf("args init succeed!\n");
     } else {
         serverResponse(p_args.connectionSocket, EXECUTE_FAILURE, -1);
         free(name);
@@ -665,7 +665,7 @@ void* serverHandleNewExecution(void *t) {
     // Execute
     skeleton f = serverProcedureToSkeleton.findSkeleton(queryKey);
     if (f == NULL) {
-        printf("591: %s skeleton is null\n", name);
+//        printf("591: %s skeleton is null\n", name);
     }
     
     int executionResult = f(argTypes, args);
@@ -681,7 +681,7 @@ void* serverHandleNewExecution(void *t) {
         free(messageBody);
         pthread_exit((void*) 0);;
     }
-    printf("EXE succeed\n");
+//    printf("EXE succeed\n");
     // Send EXECUTE_SUCCESS
     serverResponse(p_args.connectionSocket, EXECUTE_SUCCESS, 0);
     
@@ -743,6 +743,6 @@ void* serverHandleNewExecution(void *t) {
     free(args);
     free(messageBody);
     
-    printf("New thread end\n");
+//    printf("New thread end\n");
     pthread_exit((void*) 0);;
 }
