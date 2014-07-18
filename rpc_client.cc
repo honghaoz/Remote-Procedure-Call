@@ -628,6 +628,8 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
         perror("The length from binder is correct\n");
         return -1;
     }
+    std::cout<<"the length of message is "<<messageLength<<std::endl;
+    
     BYTE* message_body = (BYTE *)malloc(sizeof(BYTE) * messageLength);
     receivedSize = recv(binder_fd,message_body , messageLength, 0);
     // Connection lost
@@ -642,13 +644,15 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
         return -1;
     }
     else {
+        std::cout<<"received size is "<<receivedSize<<std::endl;
         close(binder_fd);
     }
     int NumOfServers = messageLength/20;
     char* server_host = NULL;
-    memcpy(server_host,message_body,16);
     int portnum;
     int offset = 0;
+    
+    std::cout<<"inserting server info "<<std::endl;
     for(int i = 0; i < NumOfServers; i++){
         server_host = (char*)malloc(sizeof(sizeof(char) * 16));
         memcpy(server_host,message_body+offset,16);
@@ -804,12 +808,14 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
         return -1;
     }
     
+    std::cout<<"send cache loc request\n"<<std::endl;
     int reasoncode = CachedLocationRequest(name, argTypes,binder_fd);
     if(reasoncode != 0){
         perror("CachedCall: failed to send location request to binder\n");
         return reasoncode;
     }
     
+    std::cout<<"waiting binder response\n"<<std::endl;
     reasoncode = clientHandleBinderResponseForCachedCall(binder_fd);
     if(reasoncode != 0){
         perror("CachedCall: failed to handle response from binder\n");
@@ -819,7 +825,7 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     int server_sockfd;
     //    std::cout<<"server IP address: "<<server_host<<" server port: "<<server_port<<std::endl;
     server_sockfd = getServerSocket(name, argTypes,binder_fd);
-    //    std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
+        std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
     if(server_sockfd < 0){
         std::cerr<<"Server Connection Error Ocurrs!"<<std::endl;
         return -1;
