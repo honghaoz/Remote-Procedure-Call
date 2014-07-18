@@ -41,21 +41,21 @@ int Connection(const char* hostname, const char* portnumber){
     status = getaddrinfo(hostname,portnumber, &host_info, &host_info_list);
     if(status){
         std::cerr<<"CLIENT ERROR: Cannot Get Address Information!"<<std::endl;
-        return -1;
+        return -81;
     }
     
     int socketfd;
     socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
     if(socketfd == -1){
         std::cerr<<"CLIENT ERROR: Socket Error"<<std::endl;
-        return -1;
+        return -73;
     }
     
     
     status = connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen);
     if(status == -1){
         std::cerr<<"CLIENT ERROR: connection error!"<<std::endl;
-        return -1;
+        return -73;
     }
     
     return socketfd;
@@ -69,20 +69,20 @@ int ConnectToBinder(){
         std::string name = "127.0.0.1";
         const char* host = name.c_str();//getenv("BINDER_ADDRESS");//get the server hostname from env
         if(host == NULL){
-            std::cerr<<"CLIENT ERROR: host is null"<<std::endl;
-            return -1;
+            std::cerr<<"CLIENT ERROR: binder host is null"<<std::endl;
+            return -71;
         }
         std::string p = "8888";
         const char* portnum = p.c_str();//getenv("BINDER_PORT");//get the server socket port from env
         if(portnum == NULL){
-            std::cerr<<"CLIENT ERROR: port number is NULL!"<<std::endl;
-            return -1;
+            std::cerr<<"CLIENT ERROR: binder port number is NULL!"<<std::endl;
+            return -72;
         }
         socketfd = Connection(host, portnum);
 //        std::cout<<"new socket fd with binder is: "<<socketfd<<std::endl;
         if(socketfd < 0){
             std::cerr<<"CLIENT ERROR: wrong socket identifier!"<<std::endl;
-            return -1;;
+            return -73;
         }
         return socketfd;
 }
@@ -103,7 +103,7 @@ int clientHandleBinderResponse(int connectionSocket) {
     receivedSize = recv(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client receive binder response type failed\n");
-        return -1;
+        return -63;
     }
     receivedSize = -1;
     
@@ -111,7 +111,7 @@ int clientHandleBinderResponse(int connectionSocket) {
     receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client receive binder response errorCode failed\n");
-        return -1;
+        return -64;
     }
     
     responseType = ntohl(responseType_network);
@@ -147,7 +147,7 @@ int clientHandleResponse(int connectionSocket) {
     receivedSize = recv(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client receive server response type failed\n");
-        return -1;
+        return -69;
     }
     receivedSize = -1;
     
@@ -155,7 +155,7 @@ int clientHandleResponse(int connectionSocket) {
     receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client receive server response errorCode failed\n");
-        return -1;
+        return -74;
     }
     
     responseType = ntohl(responseType_network);
@@ -169,7 +169,8 @@ int clientHandleResponse(int connectionSocket) {
 //        printf("Server response: EXECUTE_SUCCESS\n");
         return 0;
     } else {
-        return 0;
+        perror("CLIENT ERROR: Client receive server wrong response type failed\n");
+        return -69;
     }
 }
 
@@ -184,21 +185,20 @@ int ConnectToServer(char* hostname, char* portnumber){
     sockfd = Connection(hostname, portnumber);
     if(sockfd < 0){
         std::cerr<<"wrong socket identifier!"<<std::endl;
-        return -1;
+        return -73;
     }
     return sockfd;
-    
 }
 
 int locationRequest(char* name, int* argTypes, int sockfd){
     //error checking?
     if(name == NULL){
         perror("null pointer of binder ip");
-        return -1;
+        return -75;
     }
     if(argTypes == NULL){
         perror("null pointer of argtype");
-        return -1;
+        return -76;
     }
     // Prepare message content
     uint32_t sizeOfName = (uint32_t)strlen(name) + 1;
@@ -230,7 +230,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client send to binder: message length failed\n");
-        return -1;
+        return -66;
     }
 //    printf("Send message length succeed: %zd\n", operationResult);
     
@@ -239,7 +239,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     operationResult = send(sockfd, &messageType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client send to binder: Send message type failed\n");
-        return -1;
+        return -67;
     }
 //    printf("Send message type succeed: %zd\n", operationResult);
     
@@ -248,7 +248,7 @@ int locationRequest(char* name, int* argTypes, int sockfd){
     operationResult = send(sockfd, &messageBody, messageLength, 0);
     if (operationResult != messageLength) {
         perror("CLIENT ERROR: Client send to binder: Send message body failed\n");
-        return -1;
+        return -68;//send message body error
     }
     return 0;
 }
@@ -258,15 +258,15 @@ int locationRequest(char* name, int* argTypes, int sockfd){
 int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     if(name == NULL ){
         perror("CLIENT ERROR: null pointer of binder ip to send execute request");
-        return -1;
+        return -75;
     }
     if(argTypes == NULL){
         perror("CLIENT ERROR: null pointer of argTypes to send execute request");
-        return -1;
+        return -76;
     }
     if(args == NULL){
         perror("CLIENT ERROR: null pointer of arguments to send execute request");
-        return -1;
+        return -77;
     }
     
     int numofargs = argTypesLength(argTypes); // number of args
@@ -312,7 +312,6 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     operationResult = send(sockfd, &messageLength_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("Client request execute to server: Send message length failed\n");
-        std::cout<<"expect length is: "<<sizeof(uint32_t)<<" and the actual length is: "<<operationResult<<std::endl;
         return -1;
     }
     //printf("Send message length succeed: %zd\n", operationResult);
@@ -322,7 +321,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     operationResult = send(sockfd, &messageType_network, sizeof(uint32_t), 0);
     if (operationResult != sizeof(uint32_t)) {
         perror("Client request execute to server: Send message type failed\n");
-        return -1;
+        return -66;
     }
     //printf("Send message type succeed: %zd\n", operationResult);
     
@@ -331,7 +330,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
     operationResult = send(sockfd, &messageBody, messageLength, 0);
     if (operationResult != messageLength) {
         perror("Client request execute to server: Send message body failed\n");
-        return -1;
+        return -68;
     }
     
     int response = 0;
@@ -346,7 +345,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         receivedSize = (int)recv(sockfd, messageBody, messageLength, 0);
         if (receivedSize != messageLength) {
             perror("Client received wrong length of message body\n");
-            return -1;
+            return -78;
         }
         
         // Message body: [name,argTypes,argsByte,]
@@ -386,7 +385,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
                         free(argTypes_received);
                         free(argsByte_received);
 //                        free(args_received);
-                        return -1;
+                        return -78;
                         break;
                 }
                 lastSeperatorIndex = i;
@@ -397,22 +396,6 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         if(argsByte_received == NULL){
             printf("args byte is null\n");
         }
-        //printOutArgsByte(argTypes_received, argsByte_received);
-        
-        
-        // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
-        // BYTE *argsByte)
-        if (argsByteToArgs(argTypes_received, argsByte_received, args)) {
-//            printf("args init succeed!\n");
-        } else {
-            free(name_received);
-            free(argTypes_received);
-            free(argsByte_received);
-//            free(args_received);
-            return -1;
-        }
-        //printOutArgs(argTypes_received, args);
-//        args = args_received;
     }
     else{
         printf("reasonCode: %d\n",response);
@@ -557,7 +540,7 @@ int clientHandleBinderResponseForCachedCall(int connectionSocket) {
     receivedSize = recv(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client receive binder response type failed\n");
-        return -1;
+        return -63;
     }
     receivedSize = -1;
     
@@ -565,7 +548,7 @@ int clientHandleBinderResponseForCachedCall(int connectionSocket) {
     receivedSize = recv(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
         perror("CLIENT ERROR: Client receive binder response errorCode failed\n");
-        return -1;
+        return -64;
     }
     
     responseType = ntohl(responseType_network);
@@ -607,12 +590,12 @@ int getServerSocket(char* name, int* argTypes,int binder_fd){
     if (receivedSize == 0) {
         perror("CLIENT ERROR: Connection between client and binder is lost\n");
         close(binder_fd);
-        return -1;
+        return -61;
     }
     else if (receivedSize != messageLength) {
         perror("CLIENT ERROR: Client received wrong length of message length\n");
         close(binder_fd);
-        return -1;
+        return -62;
     }
     else {
         close(binder_fd);
@@ -673,7 +656,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
         std::cerr<<"CLIENT ERROR: Binder Connection Error Ocurrs!"<<std::endl;
-        return -1;
+        return -61;// BINDER CONNECTION FAILED
     }
     
     int reasoncode = locationRequest(name, argTypes,binder_fd);
@@ -685,11 +668,11 @@ int rpcCall(char* name, int* argTypes, void** args) {
     reasoncode = clientHandleBinderResponse(binder_fd);
     if(reasoncode == -13){
         perror("CLIENT ERROR: LOC Wrong message body on binder side\n");
-        return reasoncode;
+        return reasoncode; //LOC Wrong message body on binder side
     }
     else if(reasoncode == -14){
         perror("CLIENT ERROR: LOC Procedure not found on binder side\n");
-        return reasoncode;
+        return reasoncode; //LOC Procedure not found on binder side
     }
     //get the ip and port from binder
     ssize_t receivedSize = -1;
@@ -702,12 +685,12 @@ int rpcCall(char* name, int* argTypes, void** args) {
     if (receivedSize == 0) {
         perror("CLIENT ERROR: Connection between client and binder is lost\n");
         close(binder_fd);
-        return -1;
+        return -61; //binder connection failed
     }
     else if (receivedSize != messageLength) {
         perror("CLIENT ERROR: client received wrong length of message length\n");
         close(binder_fd);
-        return -1;
+        return -62;
     }
     else {
 //        printf("Received length of message length: %zd\n", receivedSize);
@@ -790,7 +773,7 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
         std::cerr<<"CLIENT ERROR: Client Binder Connection Error Occurs!"<<std::endl;
-        return -1;
+        return -61;
     }
     
     //std::cout<<"send cache loc request"<<std::endl;
@@ -813,7 +796,7 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
 //        std::cout<<"server socket fd is: "<<server_sockfd<<std::endl;
     if(server_sockfd < 0){
         std::cerr<<"CLIENT ERROR: Server Client Connection Error Ocurrs!"<<std::endl;
-        return -1;
+        return -65;
     }
     
     reasoncode = executeRequest(name, argTypes, args, server_sockfd);
@@ -832,13 +815,13 @@ int rpcTerminate() {
     binder_fd = ConnectToBinder();//connect to binder first
     if(binder_fd < 0){
         std::cerr<<"CLIENT ERROR: Client Binder Connection Error Ocurrs!"<<std::endl;
-        return -1;
+        return -61;
     }
 
     int result = terminateRequest(binder_fd);
     if(result != 0){
         perror("CLIENT ERROR: terminate failed!\n");
-        return -1;
+        return -70;
     }
     close(binder_fd);
     return 0;
