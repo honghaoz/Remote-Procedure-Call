@@ -805,6 +805,8 @@ int rpcCacheCall(char* name, int* argTypes, void** args) {
             serverIpPort = clientDataBase.findIp_cached(key);
             if(clientDataBase.isIpPortEqual(*serverIpPort, IpPort)){
                 clientDataBase.clear_vecIpForCached(key);
+                if(serverIpPort != NULL)
+                free(serverIpPort);
                 serverIpPort = NULL;
                 break;
             }
