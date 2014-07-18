@@ -113,7 +113,7 @@ int clientHandleBinderResponse(int connectionSocket) {
     
     responseType = ntohl(responseType_network);
     responseErrorCode = ntohl(responseErrorCode_network);
-    printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
+//    printf("type: %d, errorCode: %d\n", responseType, responseErrorCode);
     if (responseType == LOC_FAILURE) {
         //perror("Binder response: REGISTER_FAILURE Error Code: %d\n");
         std::cerr << "Binder response: LOC_FAILURE Error Code: " << responseErrorCode << std::endl;
@@ -427,7 +427,7 @@ int executeRequest(char* name, int* argTypes, void** args, int sockfd){
         // Process for args from argsByte, comsumes (int* argTypes, void** args == NULL,
         // BYTE *argsByte)
         if (argsByteToArgs(argTypes_received, argsByte_received, args)) {
-            printf("args init succeed!\n");
+//            printf("args init succeed!\n");
         } else {
             free(name_received);
             free(argTypes_received);
