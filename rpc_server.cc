@@ -23,6 +23,8 @@
 #include "pmap.h"
 //using namespace std;
 
+#define IS_DEBUG false
+
 /******************* Server  ************************
  *
  *  Description: Server related variables and functions
@@ -416,7 +418,7 @@ int rpcExecute() {
     }
     pthread_exit((void *) 0);
     close(serverForClientSocket);
-    printf("Server terminated\n");
+    if(IS_DEBUG) printf("Server terminated\n");
     return 0;
 }
 
@@ -702,7 +704,7 @@ void* serverHandleNewExecution(void *t) {
         }
     }
     
-    printf("Execute Procedure: %s\n", name);
+    if(IS_DEBUG) printf("Execute Procedure: %s\n", name);
     //    printf("Execute ArgTypes: ");
     //    for (int i = 0; i < argTypesLength(argTypes); i++) {
     //        printf("%s\n", u32ToBit(argTypes[i]));
