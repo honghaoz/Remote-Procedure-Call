@@ -202,6 +202,40 @@ void binderBuildConnectionList() {
 }
 
 /**
+ *  Binder handle new connection from client or server
+ *
+ *  @return Handle execution result
+ */
+int binderHandleNewConnection() {
+    int newSock;
+    struct sockaddr_in client;
+    int addr_size = sizeof(struct sockaddr_in);
+    
+    // Try to accept a new connection
+    newSock = accept(binderListenSocket, (struct sockaddr *)&client, (socklen_t *)&addr_size);
+    if (newSock < 0) {
+        perror("BINDER ERROR: Accept new connection failed\n");
+        return -2; // ERROR -2: Accept new connection failed
+    }
+    // Add this new client to clients
+    for (int i = 0; (i < MAX_NUMBER_OF_CONNECTIONS) && (i != -1); i++) {
+        if (binderConnections[i] == 0) {
+            //            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
+            binderConnections[i] = newSock;
+            newSock = -1;
+            break;
+        }
+    }
+    if (newSock != -1) {
+        perror("BINDER ERROR: No room left for new connection\n");
+        close(newSock);
+        return -3; // ERROR -3: No room left for new connection
+    }
+    
+    return 0;
+}
+
+/**
  *  Binder read active sockets
  *
  *  @return Read execution result
@@ -218,10 +252,10 @@ int binderReadSockets() {
     // Check whether there is new data come in
     for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
         if (FD_ISSET(binderConnections[i], &binderSocketsFD)) {
-            int resultOfBinderDealWithData = binderDealWithData(i);
-            if (resultOfBinderDealWithData < 0) {
-                return -1;
-            } else if (resultOfBinderDealWithData == BINDER_TERMINATE) {
+            int binderDealWithDataResult = binderDealWithData(i);
+            if (binderDealWithDataResult < 0) {
+                return binderDealWithDataResult;
+            } else if (binderDealWithDataResult == BINDER_TERMINATE) {
                 return BINDER_TERMINATE;
             }
         }
@@ -229,61 +263,8 @@ int binderReadSockets() {
     return 0;
 }
 
-int binderHandleNewConnection() {
-    int newSock;
-    struct sockaddr_in client;
-    int addr_size = sizeof(struct sockaddr_in);
-    
-    // Try to accept a new connection
-    newSock = accept(binderListenSocket, (struct sockaddr *)&client, (socklen_t *)&addr_size);
-    if (newSock < 0) {
-        perror("BINDER ERROR: Accept new connection failed\n");
-        return -2; // ERROR -2: Accept new connection failed
-    }
-    // Add this new client to clients
-    for (int i = 0; (i < MAX_NUMBER_OF_CONNECTIONS) && (i != -1); i++) {
-        if (binderConnections[i] == 0) {
-//            printf("\nConnection accepted: FD=%d; Slot=%d\n", newSock, i);
-            binderConnections[i] = newSock;
-            newSock = -1;
-            break;
-        }
-    }
-    if (newSock != -1) {
-        perror("BINDER ERROR: No room left for new connection\n");
-        close(newSock);
-        return -3; // ERROR -3: No room left for new connection
-    }
-    
-    return 0;
-}
 
-// Server send back response
-int binderResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
-    // Send response message to server
-    uint32_t responseType_network = htonl(responseType);
-    uint32_t responseErrorCode_network = htonl(errorCode);
-    
-    // Send response type
-    ssize_t operationResult = -1;
-    operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
-    if (operationResult != sizeof(uint32_t)) {
-        perror("Binder sends response type failed\n");
-        return -1;
-    }
-    
-    // Send response error code
-    operationResult = -1;
-    operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
-    if (operationResult != sizeof(uint32_t)) {
-        perror("Binder sends response errorCode failed\n");
-        return -1;
-    }
-//    printf("Binder responseType: %d, errorCode: %d\n", responseType, errorCode);
-    
-    return 0;
-}
-
+int binderResponse(int connectionSocket, messageType responseType, uint32_t errorCode);
 // Binder deal with three different message: Register, Locate and Terminate
 int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
 int binderDealWithLocateMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize);
@@ -314,16 +295,15 @@ int binderDealWithData(int connectionNumber) {
         // Check whether there is active connections
         for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++) {
             if (binderConnections[i] != 0) {
-                return 0;
+                return 0; // SUCCEE
             }
         }
-        return BINDER_TERMINATE;
+        return BINDER_TERMINATE; // TERMINATE
     }
     else if (receivedSize != sizeof(uint32_t)) {
-        perror("Binder received wrong length of message length\n");
-        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
-        return -1;
-//        return 0;
+        perror("BINDER ERROR: Message length error\n");
+//        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
+        return -4; // ERROR -4:
     }
     else { // Receive message length correctly
 //        printf("Received length of message length: %zd\n", receivedSize);
@@ -334,10 +314,9 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, &messageType_network, sizeof(uint32_t), 0);
     if (receivedSize != sizeof(uint32_t)) {
-        perror("Binder received wrong length of message type\n");
+        perror("BINDER ERROR: Message type length error\n");
 //        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
-        return -1;
-//        return 0;
+        return -5; // ERROR -5
     } else { // Receive message length correctly
 //        printf("Received length of message type: %zd\n", receivedSize);
         messageType = ntohl(messageType_network);
@@ -350,44 +329,69 @@ int binderDealWithData(int connectionNumber) {
     receivedSize = -1;
     receivedSize = recv(connectionSocket, messageBody, messageLength, 0);
     if (receivedSize != messageLength) {
-        perror("Binder received wrong length of message body\n");
-        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
-        return -1;
-//        return 0;
+        perror("BINDER ERROR: Message body length error\n");
+//        binderResponse(connectionSocket, REGISTER_FAILURE, 1);
+        return -6; // ERROR -6
     }
 //    printf("Received length of message body: %zd\n", receivedSize);
     
     switch (messageType) {
         case REGISTER: {
-            printf("\n******************* NEW REGISTER *******************\n");
+            printf("BINDER: Receive REGISTER\n");
             return binderDealWithRegisterMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case LOC_REQUEST: {
-            printf("\n******************* NEW LOCATE *******************\n");
+            printf("BINDER: Receive LOC_REQUEST\n");
             return binderDealWithLocateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         case TERMINATE: {
-            printf("\n******************* NEW TERMINATE *******************\n");
+            printf("BINDER: Receive TERMINATE\n");
             return binderDealWithTerminateMessage(connectionSocket, messageBody, receivedSize, connectionNumber);
             break;
         }
         case LOC_CACHED_REQUEST: {
-            printf("\n***************** NEW CACHED LOCATE *******************\n");
+            printf("BINDER: Receive LOC_CACHED_REQUEST\n");
             return binderDealWithCachedLocateMessage(connectionSocket, messageBody, receivedSize);
             break;
         }
         default:
-            perror("Binder received unknown message type\n");
-            return -1;
-//            return 0;
+            perror("BINDER ERROR: Received unknown message type\n");
+            if (messageBody != NULL) free(messageBody);
+            return -7; // ERROR -7
             break;
     }
-    free(messageBody);
+    if (messageBody != NULL) free(messageBody);
+    return 0; // Never goes here
+}
+
+// Server send back response
+int binderResponse(int connectionSocket, messageType responseType, uint32_t errorCode) {
+    // Send response message to server
+    uint32_t responseType_network = htonl(responseType);
+    uint32_t responseErrorCode_network = htonl(errorCode);
+    
+    // Send response type
+    ssize_t operationResult = -1;
+    operationResult = send(connectionSocket, &responseType_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Binder sends response type failed\n");
+        return -1;
+    }
+    
+    // Send response error code
+    operationResult = -1;
+    operationResult = send(connectionSocket, &responseErrorCode_network, sizeof(uint32_t), 0);
+    if (operationResult != sizeof(uint32_t)) {
+        perror("Binder sends response errorCode failed\n");
+        return -1;
+    }
+    //    printf("Binder responseType: %d, errorCode: %d\n", responseType, errorCode);
     
     return 0;
 }
+
 
 int binderDealWithRegisterMessage(int connectionSocket, BYTE *messageBody, ssize_t messageBodySize) {
     // Message body: [ip,portnum,name,argTypes,]
