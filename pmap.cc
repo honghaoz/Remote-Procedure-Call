@@ -1,6 +1,6 @@
 //
 //  pmap.cc
-//  a3-binder
+//  binder
 //
 //  Created by Honghao on 7/11/14.
 //  Copyright (c) 2014 org-honghao. All rights reserved.

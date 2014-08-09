@@ -1,5 +1,4 @@
 /************************
- CS454 A3 binder.cc
  
  created by Chao
 
